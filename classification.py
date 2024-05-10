@@ -1,7 +1,6 @@
 import os.path
 
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -9,19 +8,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import classification_report, ConfusionMatrixDisplay, confusion_matrix
+from sklearn.metrics import classification_report
 from data_manipulating.preprocessing import preprocess_corpus
 from data_manipulating.model import save_model, save_vectorizer
 
-from config import MODEL_PATH, LAST_NAME, PHOTO_PATH
-
-
-def draw_report(title, y_test, y_pred, file_name, extension):
-    ConfusionMatrixDisplay(confusion_matrix=confusion_matrix(y_test, y_pred)).plot()
-    plt.title(f"{title}")
-    plt.savefig(f"{PHOTO_PATH}/{file_name}{LAST_NAME}.{extension}", dpi=300, bbox_inches='tight')
-    plt.show()
-
+from config import MODEL_PATH, LAST_NAME
+from utils.draw_report import draw_report
 
 if MODEL_PATH == "models_back":
     raise Exception("Переписываешь резервную копию")
@@ -29,8 +21,8 @@ if os.path.exists(f"{MODEL_PATH}/tfidf_{LAST_NAME}.joblib"):
     answer = input(f"Хотите перезаписать данный путь \"{LAST_NAME}\"? y/n: ").lower()
     if answer != "y":
         raise Exception("Перезаписываете существующий файл")
-
-print(LAST_NAME, "\n")
+else:
+    print(LAST_NAME, "\n")
 
 # Загрузка данных
 data = pd.read_csv('datasets/propaganda_on_sentence_level.csv', sep=";", encoding="utf-8")
@@ -52,8 +44,6 @@ data['Class'].replace({'propaganda': 1, 'non-propaganda': 0}, inplace=True)
 
 # Удаление пустых значений
 data = data[data["PreText"] != ""]
-# data = data.dropna(subset="Class")
-# data = data.dropna(subset="PreText")
 data = data[data["PreText"].apply(lambda x: len(x.split()) > 3) | (data["Class"] == 1)]
 
 print(data.head())
