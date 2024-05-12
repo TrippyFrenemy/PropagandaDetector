@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay, confusion_matrix
 
-from config import PHOTO_PATH, LAST_NAME
+from config_classification import PHOTO_PATH, LAST_NAME
 
 
 def draw_report(title, y_test, y_pred, file_name, extension):

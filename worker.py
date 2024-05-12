@@ -2,7 +2,7 @@ import numpy
 from gensim.models import Word2Vec
 from data_manipulating.preprocessing import preprocess_corpus
 from data_manipulating.model import load_model, load_vectorizer
-from config import MODEL_PATH, LAST_NAME
+from config_classification import MODEL_PATH, LAST_NAME
 
 text = [
     "Orange is orange",

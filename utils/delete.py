@@ -1,5 +1,5 @@
 import os
-from config import MODEL_PATH, LAST_NAME, PHOTO_PATH
+from config_classification import MODEL_PATH, LAST_NAME, PHOTO_PATH
 
 
 def delete_files_by_pattern(directory, pattern):
