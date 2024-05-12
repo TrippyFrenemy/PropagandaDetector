@@ -8,3 +8,6 @@ scikit-learn~=1.4.2
 joblib~=1.4.0
 spacy~=3.7.4
 nltk~=3.8.1
+fastapi~=0.111.0
+pydantic~=2.7.1
+python-dotenv~=1.0.1
