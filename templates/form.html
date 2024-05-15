@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Text Submission Form{% endblock %}
+<style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    textarea { width: 300px; height: 150px; padding: 10px; resize: both; }
+    button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+    button:hover { background-color: #45a049; }
+    h1 { color: #333; }
+</style>
+
+
+{% block content %}
+    <h1>If you want to put text corpus, divide them by this symbol: ";"</h1>
+    <form action="/" method="post">
+        <textarea name="text" required></textarea>
+        <button type="submit">Submit</button>
+    </form>
+{% endblock %}
+

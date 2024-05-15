@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Text Analysis App{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0 }
+        .navbar {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            margin: 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+        }
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            padding: 50px; /* Enough padding to ensure content is not hidden behind the navbar */
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="/">Home</a>
+        <a href="https://github.com/TrippyFrenemy/PropagandaDetector">GitHub</a>
+        <a href="https://t.me/TrippyVonFrenemy">Telegram</a>
+    </div>
+    <div class="content">
+    {% block content %}
+    {% endblock %}
+    </div>
+</body>
+</html>

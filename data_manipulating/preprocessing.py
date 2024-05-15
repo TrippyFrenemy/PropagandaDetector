@@ -34,6 +34,9 @@ def preprocess_text(text, lemma):
     # Удаление всех одиночных символов
     text = re.sub(r'\s+[a-z]\s+', ' ', text)
 
+    text.replace("\n", "")
+    text.replace("\t", "")
+
     # Удаление начальных и конечных пробелов
     text = text.strip()
 
