@@ -1,6 +1,6 @@
 import numpy
 from gensim.models import Word2Vec
-from data_manipulating.preprocessing import preprocess_corpus
+from data_manipulating.preprocessing import Preprocessor
 from data_manipulating.model import load_model, load_vectorizer
 from config_classification import MODEL_PATH, LAST_NAME
 
@@ -28,7 +28,8 @@ y_pred_test = [0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1]
 output = ' '.join(str(num) for num in y_pred_test)
 output = "[" + output.strip() + "]"
 
-text = preprocess_corpus(text)
+preprocessing = Preprocessor()
+text = preprocessing.preprocess_corpus(text)
 print(text)
 
 # Создание векторизатора TF-IDF

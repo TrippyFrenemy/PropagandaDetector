@@ -9,7 +9,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import classification_report
-from data_manipulating.preprocessing import preprocess_corpus
+from data_manipulating.preprocessing import Preprocessor
 from data_manipulating.model import save_model, save_vectorizer
 
 from config_classification import MODEL_PATH, LAST_NAME
@@ -32,8 +32,9 @@ data = pd.read_csv('datasets/propaganda_on_sentence_level.csv', sep=";", encodin
 print(data.head())
 print(data["Class"].value_counts())
 
+preprocessing = Preprocessor()
 # Обработка текста
-data["PreText"] = preprocess_corpus(data["Text"])
+data["PreText"] = preprocessing.preprocess_corpus(data["Text"])
 
 # Сохранение обработаных данных
 data.to_csv('datasets/propaganda_on_sentence_level_preprocessed.csv', index=False, sep=";", encoding="utf-8")

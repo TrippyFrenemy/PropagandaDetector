@@ -9,7 +9,7 @@ from starlette.templating import Jinja2Templates
 import uvicorn
 
 from data_manipulating.model import load_model, load_vectorizer
-from data_manipulating.preprocessing import preprocess_corpus
+from data_manipulating.preprocessing import Preprocessor
 from config import FOREST_PATH, TFIDF_PATH
 
 
@@ -47,7 +47,8 @@ async def handle_text(request: Request, text: str = Form(...)):
         if (len(item) > 500):
             raise HTTPException(status_code=400, detail="Each element in the text should not exceed 500 characters.")
 
-    preprocessed_text = preprocess_corpus(text, lemma=True)
+    preprocessing = Preprocessor()
+    preprocessed_text = preprocessing.preprocess_corpus(text, lemma=True)
     vectorized_text = app.vectorizer.transform(preprocessed_text)
     vectorized_text_dense = vectorized_text.toarray()
 
