@@ -30,6 +30,7 @@
 
             {% endfor %}
         </ul>
+        <p class="item"><strong>Average importance of features:</strong> {{ result.avg_importance }}</p>
         <p class="item"><strong>Permutational importance of features:</strong></p>
         <ul>
             {% for word, value in result.word_perm_importance %}
@@ -38,7 +39,7 @@
                 {% endif %}
             {% endfor %}
         </ul>
-        <p class="item"><strong>Average importance of features:</strong> {{ result.avg_importance }}</p>
+        <p class="item"><strong>Percent:</strong> {{ result.percent * 100 }}</p>
         <p class="item"><strong>Status:</strong> <span class="{{ 'highlight' if result.status == 'propaganda' else '' }}">{{ result.status }}</span></p>
         <hr>
     </div>

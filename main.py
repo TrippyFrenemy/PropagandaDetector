@@ -68,7 +68,7 @@ async def handle_text(request: Request, text: str = Form(...)):
 
     # Pack results with filtered TF-IDF values and feature importances based on preprocessed text
     results = []
-    for original, preprocessed, tfidf, prediction in zip(text, preprocessed_text, tfidf_values, result_list_forest):
+    for original, preprocessed, tfidf, prediction, percent in zip(text, preprocessed_text, tfidf_values, result_list_forest, app.model.predict_proba(vectorized_text_dense)[:, 1]):
         words = preprocessed.split()
         word_tfidf = [(word, tfidf[feature_names.tolist().index(word)]) for word in words if word in feature_names]
         word_importance = [(word, feature_importances[feature_names.tolist().index(word)]) for word in words if word in feature_names]
@@ -82,6 +82,7 @@ async def handle_text(request: Request, text: str = Form(...)):
             "word_importance": word_importance,
             "word_perm_importance": word_perm_importance,
             "avg_importance": avg_importance,
+            "percent": percent,
             "status": prediction
         })
 
