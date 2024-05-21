@@ -7,41 +7,44 @@
     button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
     button:hover { background-color: #45a049; }
     h1, h2 { color: #333; }
+    #loading-spinner {
+        display: none;
+        margin-top: 20px;
+        text-align: center;
+    }
+    .spinner {
+        margin: 20px auto;
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #4CAF50;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
 </style>
 
-
 {% block content %}
-    <h1>If you want to put text corpus, divide them by this symbol: ";"</h1>
-    <form action="/" method="post">
-        <textarea name="text" required></textarea>
-        <button type="submit">Submit</button>
-    </form>
-
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <br>
-    <h2>Test text, use it if you don`t have another one</h2>
-    <div>
-    "Orange is orange";
-    "Why We should support our great nation";
-    "Our country stands on the threshold of the greatest achievements in history. While malicious critics try to undermine our progress, we must remain united and steadfast. Our leader, continuing a long tradition of outstanding government, strives tirelessly for the benefit of every citizen.";
-    "Our leader is the best of the best all over the world";
-    "In these difficult times, when national and international enemies threaten our way of life, our indomitable leader stands guard over stability and development. Thanks to his wise and decisive actions, our country's economy is experiencing unprecedented growth.";
-    "We stand on the threshold of the greatest challenges of our time. Our society, our traditions and our history are under attack from those who want to see us weakened and divided. Do not be deceived: our enemies are both internal traitors and external aggressors.";
-    "Pamela Geller and Robert Spencer co founded anti Muslim group Stop Islamization of America";
-    "Children loves chocolate";
-    "Little Kate always looks forward to the weekend to go for a walk in the nearby park.";
-    "Make sure you use the correct instances of models and vectorizers for testing that match the number of features used in the trained models";
-    "Save the crowbar from the ship to blow up the Japanese";
-    "Destroy this crazy beast. Enroll in the US Army";
-    "Fulfill the five-year plan not in five years, but in four";
-    "Death to capital or death under the heel of capital!";
-    "Workers of the world, unite! For a worldwide October!";
-    "Why we fight - for our children`s bread"
+    <div id="content">
+        <h1>If you want to put text corpus, divide them by this symbol: ";"</h1>
+        <form id="text-form" action="/" method="post">
+            <textarea name="text" required></textarea>
+            <button type="submit">Submit</button>
+        </form>
     </div>
-{% endblock %}
+    <div id="loading-spinner">
+        <div class="spinner"></div>
+        <p id="loading-text" style="display: none;">Please wait while we process your request...</p>
+    </div>
 
+    <script>
+        document.getElementById('text-form').addEventListener('submit', function(event) {
+            document.getElementById('content').style.display = 'none';
+            document.getElementById('loading-spinner').style.display = 'block';
+            document.getElementById('loading-text').style.display = 'block';
+        });
+    </script>
+{% endblock %}

@@ -3,7 +3,6 @@ import time
 
 from fastapi import FastAPI, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse
-from matplotlib import pyplot as plt
 from sklearn.inspection import permutation_importance
 from starlette.templating import Jinja2Templates
 import uvicorn
@@ -44,7 +43,7 @@ async def handle_text(request: Request, text: str = Form(...)):
 
     # Check the length of each element
     for item in text:
-        if (len(item) > 500):
+        if len(item) > 500:
             raise HTTPException(status_code=400, detail="Each element in the text should not exceed 500 characters.")
 
     preprocessing = Preprocessor()
