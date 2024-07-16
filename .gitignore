@@ -166,3 +166,7 @@ datasets-v5
 classification_report
 data.txt
 config_*
+test/
+~*
+ІПЗ32*
+Диаграммы/

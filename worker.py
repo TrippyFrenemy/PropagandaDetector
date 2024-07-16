@@ -5,23 +5,23 @@ from data_manipulating.model import load_model, load_vectorizer
 from config_classification import MODEL_PATH, LAST_NAME
 
 text = [
-    "Orange is orange",
-    "Why We should support our great nation",
+    "Orange is orange.",
+    "Why We should support our great nation.",
     "Our country stands on the threshold of the greatest achievements in history. While malicious critics try to undermine our progress, we must remain united and steadfast. Our leader, continuing a long tradition of outstanding government, strives tirelessly for the benefit of every citizen.",
-    "Our leader is the best of the best all over the world",
-    "The Everyday Struggle of Ordinary People Against Feminist Influence".lower(),
+    "Our leader is the best of the best all over the world.",
+    "The Everyday Struggle of Ordinary People Against Feminist Influence.".lower(),
     "In these difficult times, when national and international enemies threaten our way of life, our indomitable leader stands guard over stability and development. Thanks to his wise and decisive actions, our country's economy is experiencing unprecedented growth.",
     "We stand on the threshold of the greatest challenges of our time. Our society, our traditions and our history are under attack from those who want to see us weakened and divided. Do not be deceived: our enemies are both internal traitors and external aggressors.",
-    "Pamela Geller and Robert Spencer co founded anti Muslim group Stop Islamization of America",
-    "Children loves chocolate",
+    "Pamela Geller and Robert Spencer co founded anti Muslim group Stop Islamization of America.",
+    "Children loves chocolate.",
     "Little Kate always looks forward to the weekend to go for a walk in the nearby park.",
-    "Make sure you use the correct instances of models and vectorizers for testing that match the number of features used in the trained models",
-    "Save the crowbar from the ship to blow up the Japanese",
-    "Destroy this crazy beast. Enroll in the US Army",
-    "Fulfill the five-year plan not in five years, but in four",
+    "Make sure you use the correct instances of models and vectorizers for testing that match the number of features used in the trained models.",
+    "Save the crowbar from the ship to blow up the Japanese.",
+    "Destroy this crazy beast. Enroll in the US Army.",
+    "Fulfill the five-year plan not in five years, but in four.",
     "Death to capital or death under the heel of capital!",
     "Workers of the world, unite! For a worldwide October!",
-    "Why we fight - for our children`s bread"]
+    "Why we fight - for our children`s bread."]
 print(text)
 
 y_pred_test = [0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1]

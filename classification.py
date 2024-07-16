@@ -26,7 +26,6 @@ else:
 
 # Загрузка данных
 data = pd.read_csv('datasets/propaganda_on_sentence_level.csv', sep=";", encoding="utf-8")
-# data = pd.read_csv('datasets/propaganda_on_article_level_preprocessed.csv', sep=";", encoding="Windows-1251")
 
 # Первые пять данных столбца
 print(data.head())
@@ -116,5 +115,8 @@ draw_report("Tree", y_test, y_pred_tree, "tree_", "png")
 draw_report("Naive Bayes", y_test, y_pred_navbay, "naivebayes_", "png")
 draw_report("K Near Neighbours", y_test, y_pred_knn, "knn_", "png")
 
-
-
+# Векторизація тексту
+vectorizer = TfidfVectorizer()
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+save_vectorizer(vectorizer, f"{MODEL_PATH}/tfidf_{LAST_NAME}")
