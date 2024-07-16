@@ -1,15 +1,17 @@
-from contextlib import asynccontextmanager
 import time
+from contextlib import asynccontextmanager
+from io import BytesIO
 
-from fastapi import FastAPI, Form, Request, HTTPException
+import uvicorn
+from fastapi import FastAPI, Request, HTTPException, UploadFile, Form, File
 from fastapi.responses import HTMLResponse
 from sklearn.inspection import permutation_importance
 from starlette.templating import Jinja2Templates
-import uvicorn
 
+from config import FOREST_PATH, TFIDF_PATH
 from data_manipulating.model import load_model, load_vectorizer
 from data_manipulating.preprocessing import Preprocessor
-from config import FOREST_PATH, TFIDF_PATH
+from utils.add_data_to_csv import add_data_to_csv
 
 
 @asynccontextmanager
@@ -36,7 +38,8 @@ async def read_form(request: Request):
 @app.post("/", response_class=HTMLResponse)
 async def handle_text(request: Request, text: str = Form(...)):
     start = time.time()
-    text = text.split(";")
+    text = [sentence.strip() for char in [';', '!', '?'] for sentence in text.replace(char, '.').split('.') if
+            len(sentence.strip()) > 3]
 
     if text[-1] == "":
         text = text[:-1]
@@ -62,7 +65,7 @@ async def handle_text(request: Request, text: str = Form(...)):
     feature_importances = app.model.feature_importances_
 
     # Пермутационная важность признаков
-    perm_importance = permutation_importance(app.model, vectorized_text_dense, predicted_forest, n_repeats=2, random_state=0)
+    perm_importance = permutation_importance(app.model, vectorized_text_dense, predicted_forest, n_repeats=10, random_state=0)
     perm_importance_values = perm_importance.importances_mean
 
     # Pack results with filtered TF-IDF values and feature importances based on preprocessed text
@@ -92,6 +95,42 @@ async def handle_text(request: Request, text: str = Form(...)):
     print("It took", length, "seconds!")
 
     return templates.TemplateResponse("result.html", {"request": request, "results": results})
+
+
+@app.get("/add", response_class=HTMLResponse)
+async def get_data_to_csv(request: Request):
+    return templates.TemplateResponse("add_data_to_csv.html", {"request": request})
+
+
+@app.post("/add")
+async def get_data_to_csv(request: Request, text: str = Form(None), files: list[UploadFile] = File(...)):
+
+    if text:
+        data = text.strip()
+    else:
+        data = ""
+        for file in files:
+            try:
+                # Считываем содержимое файла в переменную
+                contents = await file.read()
+                file_contents = BytesIO(contents)
+
+                # Пример обработки содержимого файла
+                file_contents.seek(0)
+                data += file_contents.read().decode()  # или другой подходящий метод для обработки
+
+                if not data.endswith('\r\n'):
+                    data += '\r\n'
+            except Exception as e:
+                return {"message": f"There was an error uploading the file: {e}"}
+            finally:
+                await file.close()
+
+    try:
+        add_data_to_csv(data)
+        return {"message": f"Your data was successfully added to the dataset"}
+    except Exception as e:
+        return {"message": f"There was an error uploading the dataset: {e}"}
 
 
 @app.exception_handler(HTTPException)

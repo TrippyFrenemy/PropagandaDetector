@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Text{% endblock %}
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        hr { padding-bottom: 30px }
+    </style>
+
+{% block content %}
+    <h2>Upload text in csv format (Text;Class)</h2>
+    <form action="/add" method="post" enctype="multipart/form-data">
+        <label for="text">Enter text:</label><br>
+        <textarea name="text" rows="4" cols="50"></textarea><br><br>
+        <label for="file">Upload file: <strong>txt</strong> or <strong>csv</strong></label><br>
+        <input type="file" name="files" multiple><br><br>
+        <input type="submit" value="Submit">
+    </form>
+{% endblock %}

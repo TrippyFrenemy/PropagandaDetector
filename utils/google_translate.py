@@ -51,6 +51,10 @@ def translate_corpus(corpus_to_translate):
     return corpus
 
 
+def check_ua(text):
+    return True if translator.detect(text).lang == 'uk' else False
+
+
 if __name__ == '__main__':
     INPUT_PATH = '../datasets/propaganda_on_sentence_level.csv'
     OUTPUT_PATH = '../datasets/propaganda_on_sentence_level_ua_not_provided.csv'
