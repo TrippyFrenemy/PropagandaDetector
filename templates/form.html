@@ -29,7 +29,7 @@
 
 {% block content %}
     <div id="content">
-        <h1>If you want to put text corpus, divide them by this symbol: ";"</h1>
+        <h2>If you want to put text corpus, divide them by this symbol: ";", ".", "!", "?"</h2>
         <form id="text-form" action="/" method="post">
             <textarea name="text" required></textarea>
             <button type="submit">Submit</button>
@@ -38,6 +38,8 @@
     <div id="loading-spinner">
         <div class="spinner"></div>
         <p id="loading-text" style="display: none;">Please wait while we process your request...</p>
+        <p id="additional-text1" style="display: none;">Please wait, we`ve just preprocessed text...</p>
+        <p id="additional-text2" style="display: none;">Please wait while we search propaganda ngrams...</p>
     </div>
 
     <script>
@@ -45,6 +47,12 @@
             document.getElementById('content').style.display = 'none';
             document.getElementById('loading-spinner').style.display = 'block';
             document.getElementById('loading-text').style.display = 'block';
+            setTimeout(function() {
+                document.getElementById('additional-text1').style.display = 'block';
+            }, 2000);
+            setTimeout(function() {
+                document.getElementById('additional-text2').style.display = 'block';
+            }, 10000);
         });
     </script>
 {% endblock %}
