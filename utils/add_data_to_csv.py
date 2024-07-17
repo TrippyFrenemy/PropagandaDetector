@@ -17,10 +17,6 @@ def add_data_to_csv(input_text: str):
             raise ValueError(f"Invalid input format: '{line}'. Each line must contain exactly one semicolon. The text must be Ukrainian. The class must be either 'non-propaganda' or 'propaganda'")
         new_data.append(parts)
 
-    # print([[l.strip() for l in line.split(";")] for line in input_text.strip().split('\r\n')])
-    # # Split input text into lines and then split each line into text and class
-    # new_data = [[line.strip() for line in lines.split(";")] for lines in input_text.strip().split('\r\n')]
-
     # Create a DataFrame from the new data
     new_df = pd.DataFrame(new_data, columns=['Text', 'Class'])
 
