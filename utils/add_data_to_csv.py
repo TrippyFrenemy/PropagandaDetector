@@ -12,9 +12,12 @@ def add_data_to_csv(input_text: str):
 
     new_data = []
     for line in input_text.strip().split('\r\n'):
-        parts = [part.strip() for part in line.split(";")]
+        parts = [part.lower().strip() for part in line.split(";")]
         if len(parts) != 2 or not check_ua(parts[0]) or parts[1] not in ["non-propaganda", "propaganda"]:
-            raise ValueError(f"Invalid input format: '{line}'. Each line must contain exactly one semicolon. The text must be Ukrainian. The class must be either 'non-propaganda' or 'propaganda'")
+            if parts[0] == "text" or parts[1] == "class":
+                continue
+            raise ValueError(f"Invalid input format: '{line}'. Each line must contain exactly one semicolon. The text "
+                             f"must be Ukrainian. The class must be either 'non-propaganda' or 'propaganda'")
         new_data.append(parts)
 
     # Create a DataFrame from the new data
