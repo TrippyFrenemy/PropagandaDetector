@@ -1,5 +1,4 @@
 import os.path
-
 import pandas as pd
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
@@ -7,11 +6,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import classification_report
+from tqdm import tqdm
+
 from data_manipulating.preprocessing import Preprocessor
 from data_manipulating.model import save_model, save_vectorizer
-
 from config_classification import MODEL_PATH, LAST_NAME
 from utils.draw_report import draw_report
 
@@ -63,9 +62,10 @@ param_grid_logreg = {
     'random_state': [20]
 }
 param_grid_forest = {
-    'n_estimators': [100, 200, 300, 500, 800],
+    'n_estimators': [100, 200, 300, 500],
     'criterion': ['gini', 'entropy'],
-    'max_depth': [100, 200, 300, 500, 800, None],
+    'max_features': ['sqrt', 'log2', None],
+    'max_depth': [100, 200, 300, 500, None],
     'random_state': [20]
 }
 param_grid_tree = {
@@ -78,10 +78,6 @@ param_grid_knn = {
     'weights': ['uniform', 'distance'],
     'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],
 }
-param_grid_navbay = {
-
-}
-
 
 # Функция для автоматического поиска лучших параметров
 def find_best_model(model, param_grid, X_train, y_train):
@@ -93,19 +89,17 @@ def find_best_model(model, param_grid, X_train, y_train):
         print(f"Ошибка при подборе параметров для {model.__class__.__name__}: {ex}")
         return None, None
 
-
 # Поиск лучших параметров и обучение моделей
 models_params = [
     (LogisticRegression(), param_grid_logreg, "logic_regretion"),
     (RandomForestClassifier(), param_grid_forest, "forest"),
     (DecisionTreeClassifier(), param_grid_tree, "tree"),
-    (MultinomialNB(), param_grid_navbay, "naivebayes"),
     (KNeighborsClassifier(), param_grid_knn, "knn"),
 ]
 
 best_models = {}
 
-for model, param_grid, model_name in models_params:
+for model, param_grid, model_name in tqdm(models_params):
     best_model, best_params = find_best_model(model, param_grid, X_train_tfidf, y_train)
     if best_model is not None:
         best_models[model_name] = (best_model, best_params)
@@ -117,12 +111,10 @@ for model_name, (model, params) in best_models.items():
     print(f"\n{model_name.capitalize()}:\n", classification_report(y_test, y_pred))
     draw_report(model_name.capitalize(), y_test, y_pred, model_name + "_", "png")
 
-
 # Вывод лучших параметров
 print("Best Parameters:")
 for model_name, (model, params) in best_models.items():
     print(f"{model_name.capitalize()}: {params}")
-
 
 # Вывод путей сохраненных моделей
 print("\nSaved Models:")

@@ -7,7 +7,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import classification_report
 from data_manipulating.preprocessing import Preprocessor
 from data_manipulating.model import save_model, save_vectorizer
@@ -72,9 +71,6 @@ forest.fit(X_train_tfidf, y_train)
 tree = DecisionTreeClassifier(random_state=20)
 tree.fit(X_train_tfidf, y_train)
 
-navbay = MultinomialNB()
-navbay.fit(X_train_tfidf, y_train)
-
 # Создание и обучение модели к ближайших соседов
 knn = KNeighborsClassifier(n_neighbors=15)
 knn.fit(X_train_tfidf, y_train)
@@ -83,40 +79,30 @@ knn.fit(X_train_tfidf, y_train)
 save_model(logreg, f"{MODEL_PATH}/logic_regretion_{LAST_NAME}")
 save_model(forest, f"{MODEL_PATH}/forest_{LAST_NAME}")
 save_model(tree, f"{MODEL_PATH}/tree_{LAST_NAME}")
-save_model(navbay, f"{MODEL_PATH}/naivebayes_{LAST_NAME}")
 save_model(knn, f"{MODEL_PATH}/knn_{LAST_NAME}")
 
 # Предсказание на тестовых данных
 y_pred_logreg = logreg.predict(X_test_tfidf)
 y_pred_forest = forest.predict(X_test_tfidf)
 y_pred_tree = tree.predict(X_test_tfidf)
-y_pred_navbay = navbay.predict(X_test_tfidf)
 y_pred_knn = knn.predict(X_test_tfidf)
 
 # threshold = 0.45
 #
 # Предсказание на тестовых данных
-# y_pred_logreg = (logreg.predict_proba(X_test_tfidf)[:, 1] >= threshold).astype(int)
+# y_pred_logreg = (logreg.pr edict_proba(X_test_tfidf)[:, 1] >= threshold).astype(int)
 # y_pred_forest = (forest.predict_proba(X_test_tfidf)[:, 1] >= threshold).astype(int)
 # y_pred_tree = (tree.predict_proba(X_test_tfidf)[:, 1] >= threshold).astype(int)
-# y_pred_navbay = (navbay.predict_proba(X_test_tfidf)[:, 1] >= threshold).astype(int)
+# y_pred_knn = (knn.predict_proba(X_test_tfidf)[:, 1] >= threshold).astype(int)
 
 # Вывод отчета о классификации
 print("Logreg:\n", classification_report(y_test, y_pred_logreg))
 print("\nForest:\n", classification_report(y_test, y_pred_forest))
 print("\nTree:  \n", classification_report(y_test, y_pred_tree))
-print("\nNavbay:\n", classification_report(y_test, y_pred_navbay))
 print("\nKNN:   \n", classification_report(y_test, y_pred_knn))
 
 # Вывод графиков отчета о классификации
 draw_report("Logic Regression", y_test, y_pred_logreg, "logic_regretion_", "png")
 draw_report("Forest", y_test, y_pred_forest, "forest_", "png")
 draw_report("Tree", y_test, y_pred_tree, "tree_", "png")
-draw_report("Naive Bayes", y_test, y_pred_navbay, "naivebayes_", "png")
 draw_report("K Near Neighbours", y_test, y_pred_knn, "knn_", "png")
-
-# Векторизація тексту
-vectorizer = TfidfVectorizer()
-X_train_tfidf = vectorizer.fit_transform(X_train)
-X_test_tfidf = vectorizer.transform(X_test)
-save_vectorizer(vectorizer, f"{MODEL_PATH}/tfidf_{LAST_NAME}")

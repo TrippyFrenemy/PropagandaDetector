@@ -3,7 +3,6 @@ from tqdm import tqdm
 import spacy
 from nltk import word_tokenize
 from nltk.corpus import stopwords
-from concurrent.futures import ThreadPoolExecutor
 
 
 class Preprocessor:
