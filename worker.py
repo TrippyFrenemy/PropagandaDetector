@@ -42,21 +42,18 @@ threshold = 0.45
 logreg = load_model(f"{MODEL_PATH}/logic_regretion_{LAST_NAME}")
 forest = load_model(f"{MODEL_PATH}/forest_{LAST_NAME}")
 tree = load_model(f"{MODEL_PATH}/tree_{LAST_NAME}")
-naivebayes = load_model(f"{MODEL_PATH}/naivebayes_{LAST_NAME}")
 knn = load_model(f"{MODEL_PATH}/knn_{LAST_NAME}")
 
 # Предсказание на тестовых данных
 y_pred_logreg = logreg.predict_proba(X_test_tfidf)[:, 1]
 y_pred_forest = forest.predict_proba(X_test_tfidf)[:, 1]
 y_pred_tree = tree.predict_proba(X_test_tfidf)[:, 1]
-y_pred_naivebayes = naivebayes.predict_proba(X_test_tfidf)[:, 1]
 y_pred_knn = knn.predict_proba(X_test_tfidf)[:, 1]
 
 print("expected:   ", output)
 print("logreg:     ", y_pred_logreg)
 print("forest:     ", y_pred_forest)
 print("tree:       ", y_pred_tree)
-print("naivebayes: ", y_pred_naivebayes)
 print("knn:        ", y_pred_knn)
 print()
 
@@ -64,14 +61,12 @@ print()
 y_pred_logreg = (logreg.predict_proba(X_test_tfidf)[:, 1] >= threshold).astype(int)
 y_pred_forest = (forest.predict_proba(X_test_tfidf)[:, 1] >= threshold).astype(int)
 y_pred_tree = (tree.predict_proba(X_test_tfidf)[:, 1] >= threshold).astype(int)
-y_pred_naivebayes = (naivebayes.predict_proba(X_test_tfidf)[:, 1] >= threshold).astype(int)
 y_pred_knn = (knn.predict_proba(X_test_tfidf)[:, 1] >= 0.5).astype(int)
 
 print("expected:   ", output)
 print("logreg:     ", y_pred_logreg)
 print("forest:     ", y_pred_forest)
 print("tree:       ", y_pred_tree)
-print("naivebayes: ", y_pred_naivebayes)
 print("knn:        ", y_pred_knn)
 print()
 
@@ -79,6 +74,5 @@ print("vectorizer: ", vectorizer.get_params())
 print("logreg:     ", logreg.get_params())
 print("forest:     ", forest.get_params())
 print("tree:       ", tree.get_params())
-print("naivebayes: ", naivebayes.get_params())
 print("knn:        ", knn.get_params())
 print()
