@@ -38,8 +38,11 @@ async def read_form(request: Request):
 @app.post("/", response_class=HTMLResponse)
 async def handle_text(request: Request, text: str = Form(...)):
     start = time.time()
-    text = [sentence.strip() for char in [';', '!', '?'] for sentence in text.replace(char, '.').split('.') if
-            len(sentence.strip()) > 3]
+
+    for char in [';', '!', '?']:
+        text = text.replace(char, '.')
+    text = [sentence.strip() for sentence in text.split('.')
+            if len(sentence.strip()) > 3]
 
     if text[-1] == "":
         text = text[:-1]
