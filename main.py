@@ -68,8 +68,8 @@ async def handle_text(request: Request, text: str = Form(...)):
     feature_importances = app.model.feature_importances_
 
     # Пермутационная важность признаков
-    perm_importance = permutation_importance(app.model, vectorized_text_dense, predicted_forest, n_repeats=10, random_state=0)
-    perm_importance_values = perm_importance.importances_mean
+    # perm_importance = permutation_importance(app.model, vectorized_text_dense, predicted_forest, n_repeats=10, random_state=0)
+    # perm_importance_values = perm_importance.importances_mean
 
     # Pack results with filtered TF-IDF values and feature importances based on preprocessed text
     results = []
@@ -77,15 +77,15 @@ async def handle_text(request: Request, text: str = Form(...)):
         words = preprocessed.split()
         word_tfidf = [(word, tfidf[feature_names.tolist().index(word)]) for word in words if word in feature_names]
         word_importance = [(word, feature_importances[feature_names.tolist().index(word)]) for word in words if word in feature_names]
-        word_perm_importance = [(word, perm_importance_values[feature_names.tolist().index(word)]) for word in words if
-                                word in feature_names]
+        # word_perm_importance = [(word, perm_importance_values[feature_names.tolist().index(word)]) for word in words if
+        #                         word in feature_names]
         avg_importance = sum([imp for _, imp in word_importance]) / len(word_importance) if word_importance else 0
         results.append({
             "original": original,
             "preprocessed": preprocessed,
             "word_tfidf": word_tfidf,
             "word_importance": word_importance,
-            "word_perm_importance": word_perm_importance,
+            # "word_perm_importance": word_perm_importance,
             "avg_importance": avg_importance,
             "percent": percent,
             "status": prediction
