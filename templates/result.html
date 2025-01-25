@@ -1,48 +1,132 @@
 {% extends "base.html" %}
 
 {% block title %}Preprocessed Text{% endblock %}
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .result { margin-top: 20px; }
-        .item { margin-bottom: 10px; }
-        hr { padding-bottom: 30px }
-        .highlight { color: red; }
-    </style>
 
 {% block content %}
-
+<div class="content-container">
     <h1>Analysis Results</h1>
-    {% for result in results %}
-    <div class="result">
-        <p class="item"><strong>Original text:</strong> {{ result.original }}</p>
-        <p class="item"><strong>Preprocessed text:</strong> {{ result.preprocessed }}</p>
-        <p class="item"><strong>TF-IDF values:</strong></p>
-        <ul>
-            {% for word, value in result.word_tfidf %}
-                <li><strong>{{ word }}:</strong> {{ value }}</li>
-            {% endfor %}
-        </ul>
-        <p class="item"><strong>Importance of Features:</strong></p>
-        <ul>
-            {% for word, value in result.word_importance %}
 
-                <li><strong>{{ word }}:</strong> {{ value }}</li>
+    {% if not formatted %}
+        {% for result in results %}
+        <div class="result">
+            <p class="item"><strong>Original text:</strong> {{ result.original }}</p>
+            <p class="item"><strong>Preprocessed text:</strong> {{ result.preprocessed }}</p>
+            <p class="item"><strong>TF-IDF values:</strong></p>
+            <ul>
+                {% for word, value in result.word_tfidf %}
+                    <li><strong>{{ word }}:</strong> {{ value }}</li>
+                {% endfor %}
+            </ul>
+            <p class="item"><strong>Importance of Features:</strong></p>
+            <ul>
+                {% for word, value in result.word_importance %}
+                    <li><strong>{{ word }}:</strong> {{ value }}</li>
+                {% endfor %}
+            </ul>
+            <p class="item"><strong>Average importance of features:</strong> {{ result.avg_importance }}</p>
+            <p class="item"><strong>Permutational importance of features:</strong></p>
+            <ul>
+                {% for word, value in result.word_perm_importance %}
+                    {% if value > 0.0 %}
+                    <li><strong>{{ word }}:</strong> {{ value }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+            <p class="item"><strong>Percent:</strong> {{ result.percent * 100 }}</p>
+            <p class="item"><strong>Status:</strong> <span class="{{ 'highlight' if result.status == 'propaganda' else '' }}">{{ result.status }}</span></p>
+            <hr>
+        </div>
+        {% endfor %}
+    {% else %}
+        {% for line in formatted.split('\n') %}
+            {% if line.startswith('Text:') %}
+                <div class="analysis-block">
+                    <h2>{{ line }}</h2>
+            {% elif line.startswith('Propaganda detected') %}
+                    <p class="propaganda-warning">{{ line }}</p>
+            {% elif line.startswith('No propaganda detected') %}
+                    <p class="no-propaganda">{{ line }}</p>
+            {% elif line.startswith('Confidence level:') %}
+                    <p>{{ line }}</p>
+            {% elif line.startswith('All detected techniques') %}
+                    <h3>{{ line }}</h3>
+            {% elif line.startswith('  - ') %}
+                    <p class="technique">{{ line }}</p>
+            {% elif line.startswith('    ') %}
+                    <p class="technique-detail">{{ line }}</p>
+            {% elif line.startswith('-' * 30) %}
+                </div>
+                <hr>
+            {% else %}
+                    <p>{{ line }}</p>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+</div>
 
-            {% endfor %}
-        </ul>
-        <p class="item"><strong>Average importance of features:</strong> {{ result.avg_importance }}</p>
-        <p class="item"><strong>Permutational importance of features:</strong></p>
-        <ul>
-            {% for word, value in result.word_perm_importance %}
-                {% if value > 0.0 %}
-                <li><strong>{{ word }}:</strong> {{ value }}</li>
-                {% endif %}
-            {% endfor %}
-        </ul>
-        <p class="item"><strong>Percent:</strong> {{ result.percent * 100 }}</p>
-        <p class="item"><strong>Status:</strong> <span class="{{ 'highlight' if result.status == 'propaganda' else '' }}">{{ result.status }}</span></p>
-        <hr>
-    </div>
-    {% endfor %}
+<style>
+    .content-container {
+        width: 90%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
 
+    .result {
+        margin-bottom: 30px;
+    }
+
+    .item {
+        margin: 10px 0;
+    }
+
+    .highlight {
+        color: red;
+    }
+
+    .analysis-block {
+        border: 1px solid #ddd;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 4px;
+    }
+
+    .propaganda-warning {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .no-propaganda {
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .technique {
+        margin-left: 20px;
+        font-weight: bold;
+    }
+
+    .technique-detail {
+        margin-left: 40px;
+        color: #666;
+    }
+
+    hr {
+        margin: 30px 0;
+        border: 0;
+        border-top: 1px solid #ddd;
+    }
+
+    h1 {
+        margin-bottom: 30px;
+    }
+
+    h2 {
+        margin: 20px 0;
+    }
+
+    h3 {
+        margin: 15px 0;
+    }
+</style>
 {% endblock %}

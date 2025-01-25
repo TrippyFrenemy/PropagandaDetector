@@ -167,6 +167,10 @@ classification_report
 data.txt
 config_*
 test/
+tests/
 ~*
 ПЗ32*
+ПЗ42*
 Диаграммы/
+checkpoints
+classification_configs

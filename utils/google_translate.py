@@ -39,20 +39,24 @@ def translate_csv(input_path, output_path):
     print(f'Перевод завершен и сохранен в {output_path}')
 
 
-def translate_text(text_to_translate):
+def translate_text(text_to_translate, dest="uk"):
     # Переводим текст
-    translated_text = translator.translate(text_to_translate, dest="uk").text
+    translated_text = translator.translate(text_to_translate, dest=dest).text
     return translated_text
 
 
-def translate_corpus(corpus_to_translate):
-    corpus = [translate_text(text_to_translate) for text_to_translate in tqdm(corpus_to_translate)]
+def translate_corpus(corpus_to_translate, dest="en"):
+    corpus = [translate_text(text_to_translate, dest) for text_to_translate in tqdm(corpus_to_translate)]
     print(f'Перевод завершен и возвращен')
     return corpus
 
 
-def check_ua(text):
-    return True if translator.detect(text).lang == 'uk' else False
+def check_lang(text, lang="uk"):
+    return True if translator.detect(text).lang == lang else False
+
+
+def check_lang_corpus(corpus_to_translate, lang="uk"):
+    return True if translator.detect(" ".join(corpus_to_translate)).lang == lang else False
 
 
 if __name__ == '__main__':

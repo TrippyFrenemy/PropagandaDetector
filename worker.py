@@ -1,32 +1,47 @@
 import numpy
 from gensim.models import Word2Vec
 from data_manipulating.preprocessing import Preprocessor
-from data_manipulating.model import load_model, load_vectorizer
+from data_manipulating.manipulate_models import load_model, load_vectorizer
 from config_classification import MODEL_PATH, LAST_NAME
+from utils.google_translate import check_lang_corpus, translate_corpus
 
-text = [
-    "Orange is orange.",
-    "Why We should support our great nation.",
-    "Our country stands on the threshold of the greatest achievements in history. While malicious critics try to undermine our progress, we must remain united and steadfast. Our leader, continuing a long tradition of outstanding government, strives tirelessly for the benefit of every citizen.",
-    "Our leader is the best of the best all over the world.",
-    "The Everyday Struggle of Ordinary People Against Feminist Influence.".lower(),
-    "In these difficult times, when national and international enemies threaten our way of life, our indomitable leader stands guard over stability and development. Thanks to his wise and decisive actions, our country's economy is experiencing unprecedented growth.",
-    "We stand on the threshold of the greatest challenges of our time. Our society, our traditions and our history are under attack from those who want to see us weakened and divided. Do not be deceived: our enemies are both internal traitors and external aggressors.",
-    "Pamela Geller and Robert Spencer co founded anti Muslim group Stop Islamization of America.",
-    "Children loves chocolate.",
-    "Little Kate always looks forward to the weekend to go for a walk in the nearby park.",
-    "Make sure you use the correct instances of models and vectorizers for testing that match the number of features used in the trained models.",
-    "Save the crowbar from the ship to blow up the Japanese.",
-    "Destroy this crazy beast. Enroll in the US Army.",
-    "Fulfill the five-year plan not in five years, but in four.",
-    "Death to capital or death under the heel of capital!",
-    "Workers of the world, unite! For a worldwide October!",
-    "Why we fight - for our children`s bread."]
-print(text)
+test_texts_ua = [
+    # Нейтральні тексти
+    "Сьогодні чудова сонячна погода, ідеально для прогулянки в парку.",
+    "Нова книгарня відкрилась на розі вулиці Шевченка.",
+    "У неділю відбудеться фестиваль вуличної їжі в центрі міста.",
+    "Діти люблять гратися на новому дитячому майданчику.",
+    "Цього року врожай яблук був особливо вдалим.",
 
-y_pred_test = [0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1]
+    # Тексти з елементами пропаганди
+    "Наш лідер - найвеличніший керівник за всю історію, тільки вороги батьківщини можуть це заперечувати.",
+    "Всі наші проблеми через підступні дії іноземних агентів, які намагаються знищити нашу велику країну.",
+    "Тільки повна лояльність до партії забезпечить світле майбутнє для наших дітей.",
+    "Зрадники народу не заслуговують на милосердя, їх треба нещадно викривати та карати.",
+    "Наша армія - найсильніша у світі, жоден ворог не встоїть перед нашою міццю.",
+
+    # Маніпулятивні тексти
+    "Звичайні громадяни страждають через підступні плани світової еліти.",
+    "Альтернативні джерела енергії - це змова проти традиційної промисловості.",
+    "Тільки справжні патріоти підтримують нашу політику, всі інші - вороги держави.",
+    "Міжнародні організації намагаються підірвати наш суверенітет своїми брехливими звітами.",
+    "Опозиція діє в інтересах іноземних спецслужб, це давно всім відомо.",
+
+    # Тексти з прихованою пропагандою
+    "Наші традиційні цінності під загрозою через вплив західної культури.",
+    "Молодь забуває свою історію через підступну пропаганду ворогів.",
+    "Справжні герої завжди підтримують чинну владу без жодних сумнівів.",
+    "Критики нашої політики отримують фінансування з-за кордону.",
+    "Реформи освіти знищують нашу унікальну систему виховання молоді."
+]
+print(test_texts_ua)
+
+y_pred_test = [0] * 5 + [1] * 15
 output = ' '.join(str(num) for num in y_pred_test)
 output = "[" + output.strip() + "]"
+
+if check_lang_corpus(test_texts_ua):
+    text = translate_corpus(test_texts_ua)
 
 preprocessing = Preprocessor()
 text = preprocessing.preprocess_corpus(text)

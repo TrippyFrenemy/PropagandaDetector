@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-from utils.google_translate import check_ua
+from utils.google_translate import check_lang
 
 CSV_FILE = "datasets/propaganda_on_sentence_level_ua.csv"
 
@@ -13,7 +13,7 @@ def add_data_to_csv(input_text: str):
     new_data = []
     for line in input_text.strip().split('\r\n'):
         parts = [part.lower().strip() for part in line.split(";")]
-        if len(parts) != 2 or not check_ua(parts[0]) or parts[1] not in ["non-propaganda", "propaganda"]:
+        if len(parts) != 2 or not check_lang(parts[0], "en") or parts[1] not in ["non-propaganda", "propaganda"]:
             if parts[0] == "text" or parts[1] == "class":
                 continue
             raise ValueError(f"Invalid input format: '{line}'. Each line must contain exactly one semicolon. The text "

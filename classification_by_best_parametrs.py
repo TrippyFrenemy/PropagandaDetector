@@ -10,7 +10,7 @@ from sklearn.metrics import classification_report
 from tqdm import tqdm
 
 from data_manipulating.preprocessing import Preprocessor
-from data_manipulating.model import save_model, save_vectorizer
+from data_manipulating.manipulate_models import save_model, save_vectorizer
 from config_classification import MODEL_PATH, LAST_NAME
 from utils.draw_report import draw_report
 

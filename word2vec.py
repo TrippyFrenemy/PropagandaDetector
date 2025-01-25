@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 from data_manipulating.preprocessing import preprocess_corpus
-from data_manipulating.model import save_model
+from data_manipulating.manipulate_models import save_model
 from config_classification import MODEL_PATH, LAST_NAME
 from utils.draw_report import draw_report
 
