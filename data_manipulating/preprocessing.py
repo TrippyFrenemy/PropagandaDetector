@@ -1,6 +1,5 @@
 import re
 
-import nltk
 from tqdm import tqdm
 import spacy
 from nltk import word_tokenize

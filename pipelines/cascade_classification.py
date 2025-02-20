@@ -11,7 +11,7 @@ import pandas as pd
 from typing import Dict, List, Any, Tuple
 import logging
 from tqdm import tqdm
-from sklearn.preprocessing import LabelEncoder, label_binarize
+from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
     roc_auc_score, classification_report
@@ -19,8 +19,7 @@ from sklearn.metrics import (
 from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 
 from data_manipulating.manipulate_models import save_model, load_model
-from pipelines.classification import ClassificationPipeline
-from utils.google_translate import check_lang_corpus, translate_corpus
+from utils.translate import check_lang_corpus, translate_corpus
 
 logging.basicConfig(
     level=logging.INFO,
@@ -118,7 +117,7 @@ class AttentionLayer(nn.Module):
 class BinaryPropagandaModel(nn.Module):
     """Revised binary classification model with proper attention handling."""
 
-    def __init__(self, vocab_size, embedding_dim, num_filters, lstm_hidden):
+    def __init__(self, vocab_size, embedding_dim, num_filters, lstm_hidden, k_range):
         super().__init__()
         self.embedding_dim = embedding_dim
         self.num_filters = num_filters
@@ -135,7 +134,7 @@ class BinaryPropagandaModel(nn.Module):
                 kernel_size=k,
                 padding='same'
             )
-            for k in [3, 5, 7]
+            for k in k_range
         ])
 
         # BiLSTM
@@ -206,7 +205,7 @@ class BinaryPropagandaModel(nn.Module):
 class TechniquePropagandaModel(nn.Module):
     """Model for propaganda technique classification with proper attention handling."""
 
-    def __init__(self, vocab_size, embedding_dim, num_filters, lstm_hidden, num_classes):
+    def __init__(self, vocab_size, embedding_dim, num_filters, lstm_hidden, num_classes, k_range):
         super().__init__()
         self.embedding_dim = embedding_dim
         self.num_filters = num_filters
@@ -223,7 +222,7 @@ class TechniquePropagandaModel(nn.Module):
                 kernel_size=k,
                 padding='same'
             )
-            for k in [3, 5]
+            for k in k_range
         ])
 
         # BiLSTM
@@ -296,7 +295,6 @@ class TechniquePropagandaModel(nn.Module):
 
         # Apply multi-level attention
         if attention_mask is not None:
-            # Получаем контексты на уровне слов и предложений
             word_context = self.word_attention(x, x, x, attention_mask)
             sent_context = self.sent_attention(x, x, x, attention_mask)
         else:
@@ -305,7 +303,6 @@ class TechniquePropagandaModel(nn.Module):
 
         # Combine contexts
         if fragment_weights is not None:
-            # Применяем веса к фрагментам
             fragment_weights = fragment_weights.unsqueeze(-1)
             weighted_x = x * fragment_weights
 
@@ -447,7 +444,7 @@ class PropagandaDataset(Dataset):
             result['technique_label'] = torch.tensor(
                 self.technique_labels[idx],
                 dtype=torch.long
-            )
+            ).detach().clone()
 
             # Добавляем веса фрагментов
             fragment_weights = torch.ones(self.max_length)
@@ -470,28 +467,36 @@ class PropagandaDataset(Dataset):
         return result
 
 
-class CascadePropagandaPipeline(ClassificationPipeline):
+class CascadePropagandaPipeline:
     def __init__(
             self,
             model_path: str = "models",
             model_name: str = "cascade_propaganda_model",
             device: str = "cuda" if torch.cuda.is_available() else "cpu",
             batch_size: int = 32,
-            num_epochs: int = 10,
+            num_epochs_binary: int = 10,
+            num_epochs_technique: int = 10,
             learning_rate: float = 2e-5,
             warmup_steps: int = 1000,
             max_length: int = 512,
             class_weights: bool = True,
+            binary_k_range: list[int] = [3,4,5],
+            technique_k_range: list[int] = [2,3,4,5],
             **kwargs
     ):
-        super().__init__(model_path, model_name)
+        self.model_path = model_path
+        self.model_name = model_name
         self.device = device
         self.batch_size = batch_size
-        self.num_epochs = num_epochs
+        self.num_epochs_binary = num_epochs_binary
+        self.num_epochs_technique = num_epochs_technique
         self.learning_rate = learning_rate
         self.warmup_steps = warmup_steps
         self.max_length = max_length
         self.class_weights = class_weights
+
+        self.binary_k_range = binary_k_range
+        self.technique_k_range = technique_k_range
 
         self.tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
         self._initialize_components()
@@ -506,220 +511,7 @@ class CascadePropagandaPipeline(ClassificationPipeline):
         self.lstm_hidden = 256
 
         self.patience = 3
-        self.max_steps = self.num_epochs * 1000
-
-    def get_params(self, detailed=True):
-        """
-        Получение параметров моделей и конфигурации.
-
-        Args:
-            detailed (bool): Если True, возвращает детальную информацию о слоях
-
-        Returns:
-            dict: Словарь с параметрами
-        """
-        # Загружаем модели если нужно
-        if not hasattr(self, 'binary_model') or not hasattr(self, 'technique_model'):
-            self._load_models()
-
-        # Определяем класс модели
-        binary_model_class = self.binary_model.__class__.__name__
-        technique_model_class = self.technique_model.__class__.__name__
-
-        # Базовые параметры
-        params = {
-            'model_version': {
-                'binary_model': binary_model_class,
-                'technique_model': technique_model_class
-            },
-            'general_config': {
-                'device': self.device,
-                'batch_size': self.batch_size,
-                'num_epochs': self.num_epochs,
-                'learning_rate': self.learning_rate,
-                'warmup_steps': self.warmup_steps,
-                'max_length': self.max_length,
-                'class_weights': self.class_weights
-            },
-            'model_architecture': {
-                'vocab_size': self.vocab_size,
-                'embedding_dim': self.embedding_dim,
-                'num_filters': self.num_filters,
-                'lstm_hidden': self.lstm_hidden
-            }
-        }
-
-        if detailed:
-            params.update(self._get_detailed_params())
-            if hasattr(self, 'technique_encoder'):
-                params.update({
-                    'tokenizer': {'name': self.tokenizer.name_or_path},
-                    'num_technique_classes': len(self.technique_encoder.classes_),
-                    'technique_classes': self.technique_encoder.classes_.tolist()
-                })
-
-        return params
-
-    def _get_detailed_params(self):
-        """
-        Получение детальной информации о слоях модели.
-        """
-        return {
-            'binary_model_layers': self._get_binary_model_layers(),
-            'technique_model_layers': self._get_technique_model_layers()
-        }
-
-    def _get_binary_model_layers(self):
-        """
-        Базовая информация о слоях бинарной модели.
-        """
-        return {
-            'embedding': {
-                'type': 'Embedding',
-                'vocab_size': self.vocab_size,
-                'embedding_dim': self.embedding_dim
-            },
-            'conv_layers': [{
-                'type': 'Conv1d',
-                'in_channels': self.embedding_dim,
-                'out_channels': self.num_filters,
-                'kernel_size': k,
-                'padding': 'same'
-            } for k in [3, 5, 7]],
-            'bilstm': {
-                'type': 'LSTM',
-                'input_size': self.num_filters * 3,
-                'hidden_size': self.lstm_hidden,
-                'num_layers': 2,
-                'bidirectional': True
-            },
-            'attention': {
-                'type': 'AttentionLayer',
-                'hidden_size': self.lstm_hidden * 2,
-                'num_heads': 8
-            },
-            'classifier': [
-                {'type': 'Linear', 'in': self.lstm_hidden * 2, 'out': self.lstm_hidden},
-                {'type': 'ReLU'},
-                {'type': 'Dropout', 'p': 0.5},
-                {'type': 'Linear', 'in': self.lstm_hidden, 'out': 2}
-            ]
-        }
-
-    def _get_technique_model_layers(self):
-        """
-        Базовая информация о слоях модели техник.
-        """
-        if not hasattr(self, 'technique_model'):
-            return {}
-
-        return {
-            'embedding': {
-                'type': 'Embedding',
-                'vocab_size': self.vocab_size,
-                'embedding_dim': self.embedding_dim
-            },
-            'conv_layers': [{
-                'type': 'Conv1d',
-                'in_channels': self.embedding_dim,
-                'out_channels': self.num_filters,
-                'kernel_size': k,
-                'padding': 'same'
-            } for k in [3, 5]],
-            'bilstm': {
-                'type': 'LSTM',
-                'input_size': self.num_filters * 4,
-                'hidden_size': self.lstm_hidden,
-                'num_layers': 3,
-                'bidirectional': True,
-                'dropout': 0.3
-            },
-            'attention': {
-                'word_attention': {
-                    'type': 'AttentionLayer',
-                    'hidden_size': self.lstm_hidden * 2,
-                    'num_heads': 8
-                },
-                'sent_attention': {
-                    'type': 'AttentionLayer',
-                    'hidden_size': self.lstm_hidden * 2,
-                    'num_heads': 8
-                }
-            },
-            'classifier': [
-                {'type': 'Linear', 'in': self.lstm_hidden * 8, 'out': self.lstm_hidden * 4},
-                {'type': 'ReLU'},
-                {'type': 'Dropout', 'p': 0.3},
-                {'type': 'BatchNorm1d', 'size': self.lstm_hidden * 4},
-                {'type': 'Linear', 'in': self.lstm_hidden * 4, 'out': len(self.technique_encoder.classes_)}
-            ]
-        }
-
-    def print_params(self, detailed=True):
-        """
-        Печать параметров в удобочитаемом формате.
-        """
-        params = self.get_params(detailed)
-        print("\n=== Model Parameters ===")
-
-        print("\nModel Versions:")
-        for model, version in params['model_version'].items():
-            if version:  # Проверяем, что версия существует
-                print(f"  {model}: {version}")
-
-        print("\nGeneral Configuration:")
-        for param, value in params['general_config'].items():
-            print(f"  {param}: {value}")
-
-        print("\nModel Architecture:")
-        for param, value in params['model_architecture'].items():
-            print(f"  {param}: {value}")
-
-        if detailed:
-            print("\nBinary Model Layers:")
-            self._print_layers(params['binary_model_layers'])
-
-            if 'technique_model_layers' in params and params['technique_model_layers']:
-                print("\nTechnique Model Layers:")
-                self._print_layers(params['technique_model_layers'])
-
-            if 'technique_classes' in params:
-                print("\nTechnique Classes:")
-                print(f"  Number of classes: {params['num_technique_classes']}")
-                print("  Classes:", ", ".join(params['technique_classes']))
-
-    def _print_dict(self, d, indent=0):
-        """
-        Рекурсивная печать словаря с отступами.
-        """
-        for key, value in d.items():
-            if isinstance(value, dict):
-                print(" " * indent + f"{key}:")
-                self._print_dict(value, indent + 2)
-            else:
-                print(" " * indent + f"{key}: {value}")
-
-    def _print_layers(self, layers, indent=2):
-        """
-        Печать информации о слоях.
-        """
-        for layer_name, layer_info in layers.items():
-            if isinstance(layer_info, list):
-                print(" " * indent + f"{layer_name}:")
-                for i, layer in enumerate(layer_info):
-                    print(" " * (indent + 2) + f"[{i}] {layer['type']}:")
-                    for param, value in layer.items():
-                        if param != 'type':
-                            print(" " * (indent + 4) + f"{param}: {value}")
-            else:
-                print(" " * indent + f"{layer_name}:")
-                for param, value in layer_info.items():
-                    if isinstance(value, dict):
-                        print(" " * (indent + 2) + f"{param}:")
-                        for sub_param, sub_value in value.items():
-                            print(" " * (indent + 4) + f"{sub_param}: {sub_value}")
-                    else:
-                        print(" " * (indent + 2) + f"{param}: {value}")
+        self.max_steps = self.num_epochs_binary * 1000
 
     def create_datasets(self, data: pd.DataFrame):
         """Создание датасетов для обеих моделей."""
@@ -770,7 +562,8 @@ class CascadePropagandaPipeline(ClassificationPipeline):
             self.vocab_size,
             self.embedding_dim,
             self.num_filters,
-            self.lstm_hidden
+            self.lstm_hidden,
+            self.binary_k_range,
         ).to(self.device)
 
         # Создаем оптимизатор и планировщик
@@ -806,7 +599,7 @@ class CascadePropagandaPipeline(ClassificationPipeline):
         best_model = None
         patience_counter = 0
 
-        for epoch in range(self.num_epochs):
+        for epoch in range(self.num_epochs_binary):
             # Обучение
             model.train()
             train_loss = 0
@@ -880,7 +673,8 @@ class CascadePropagandaPipeline(ClassificationPipeline):
             self.embedding_dim,
             self.num_filters,
             self.lstm_hidden,
-            num_classes
+            num_classes,
+            self.technique_k_range
         ).to(self.device)
 
         optimizer = torch.optim.AdamW(
@@ -903,7 +697,7 @@ class CascadePropagandaPipeline(ClassificationPipeline):
         best_model = None
         patience_counter = 0
 
-        for epoch in range(self.num_epochs*2):
+        for epoch in range(int(self.num_epochs_technique)):
             # Обучение
             model.train()
             train_loss = 0
@@ -1114,7 +908,8 @@ class CascadePropagandaPipeline(ClassificationPipeline):
         with torch.no_grad():
             for batch in binary_val_loader:
                 batch = {k: v.to(self.device) for k, v in batch.items()}
-                outputs = self.binary_model(batch['input_ids'], batch['attention_mask'])
+                extra_features = batch.get('extra_features')
+                outputs = self.binary_model(batch['input_ids'], batch['attention_mask'], extra_features)
                 probs = torch.softmax(outputs, dim=1)
 
                 binary_preds.extend(outputs.argmax(dim=1).cpu().numpy())
@@ -1218,6 +1013,8 @@ class CascadePropagandaPipeline(ClassificationPipeline):
             'num_filters': self.num_filters,
             'lstm_hidden': self.lstm_hidden,
             'max_length': self.max_length,
+            'binary_k_range': self.binary_k_range,
+            'technique_k_range': self.technique_k_range,
 
             # Параметры токенизатора
             'tokenizer_name': 'bert-base-uncased',  # или другое имя, если используется другой токенизатор
@@ -1245,6 +1042,12 @@ class CascadePropagandaPipeline(ClassificationPipeline):
         self.warmup_steps = checkpoint['warmup_steps']
         self.class_weights = checkpoint['class_weights']
 
+        try:
+            self.binary_k_range = checkpoint['binary_k_range']
+            self.technique_k_range = checkpoint['technique_k_range']
+        except:
+            pass
+
         # Загружаем токенизатор
         self.tokenizer = AutoTokenizer.from_pretrained(checkpoint['tokenizer_name'])
 
@@ -1253,7 +1056,8 @@ class CascadePropagandaPipeline(ClassificationPipeline):
             self.vocab_size,
             self.embedding_dim,
             self.num_filters,
-            self.lstm_hidden
+            self.lstm_hidden,
+            self.binary_k_range
         ).to(self.device)
         self.binary_model.load_state_dict(checkpoint['binary_model_state'])
 
@@ -1264,7 +1068,8 @@ class CascadePropagandaPipeline(ClassificationPipeline):
             self.embedding_dim,
             self.num_filters,
             self.lstm_hidden,
-            num_classes
+            num_classes,
+            self.technique_k_range
         ).to(self.device)
         self.technique_model.load_state_dict(checkpoint['technique_model_state'])
 
@@ -1502,14 +1307,14 @@ if __name__ == "__main__":
     # Инициализация пайплайна
     pipeline = CascadePropagandaPipeline(
         model_path="../models",
-        model_name="cpm_v5",
+        model_name="cpm_v6",
         batch_size=32,
-        num_epochs=10,
+        num_epochs_binary=10,
+        num_epochs_technique=10,
         learning_rate=2e-5,
         warmup_steps=1000,
         max_length=512,
-        class_weights=True,
-        # device="cpu"
+        class_weights=True
     )
 
     # Обучение и оценка

@@ -164,7 +164,7 @@ models
 datasets
 datasets-v5
 classification_report
-data.txt
+*.txt
 config_*
 test/
 tests/
@@ -174,3 +174,4 @@ tests/
 Диаграммы/
 checkpoints
 classification_configs
+models_back/*cpm*.pkl

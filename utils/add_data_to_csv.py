@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-from utils.google_translate import check_lang
+from utils.translate import check_lang
 
 CSV_FILE = "datasets/propaganda_on_sentence_level_ua.csv"
 

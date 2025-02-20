@@ -24,7 +24,7 @@ else:
     print(LAST_NAME, "\n")
 
 # Загрузка данных
-data = pd.read_csv('datasets/propaganda_on_sentence_level.csv', sep=";", encoding="utf-8")
+data = pd.read_csv('../datasets/propaganda_on_sentence_level.csv', sep=";", encoding="utf-8")
 
 # Первые пять данных столбца
 print(data.head())
@@ -79,6 +79,7 @@ param_grid_knn = {
     'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],
 }
 
+
 # Функция для автоматического поиска лучших параметров
 def find_best_model(model, param_grid, X_train, y_train):
     try:
@@ -88,6 +89,7 @@ def find_best_model(model, param_grid, X_train, y_train):
     except Exception as ex:
         print(f"Ошибка при подборе параметров для {model.__class__.__name__}: {ex}")
         return None, None
+
 
 # Поиск лучших параметров и обучение моделей
 models_params = [

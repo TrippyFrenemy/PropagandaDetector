@@ -14,7 +14,7 @@ from data_manipulating.preprocessing import Preprocessor
 from pipelines.cascade_classification import CascadePropagandaPipeline
 from pipelines.improved_cascade import ImprovedCascadePropagandaPipeline
 from utils.add_data_to_csv import add_data_to_csv
-from utils.google_translate import check_lang_corpus, translate_corpus
+from utils.translate import check_lang_corpus, translate_corpus
 
 
 @asynccontextmanager
@@ -36,10 +36,6 @@ async def lifespan(app: FastAPI):
     print("Vectorizer parameters: ", app.vectorizer.get_params())
     print("Threshold value: ", app.threshold)
 
-    print()
-    print("Cascade parameters: ", app.cascade_pipeline.get_params(detailed=True))
-    print("Improved Cascade parameters: ", app.improved_cascade_pipeline.get_params(detailed=True))
-    print()
     yield
 
 
@@ -141,7 +137,7 @@ async def improved_classification(request: Request, text: str = Form(...)):
 
         text = await check_text(text)
 
-        results, formatted = app.improved_cascade_pipeline.predict(text, True)
+        results, formatted = app.cascade_pipeline.predict(text, True)
 
         end = time.time()
         length = end - start

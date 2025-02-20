@@ -18,7 +18,6 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -66,7 +65,7 @@ class EnhancedAttentionLayer(nn.Module):
 class ImprovedBinaryPropagandaModel(nn.Module):
     """Улучшенная модель бинарной классификации с дополнительными механизмами регуляризации."""
 
-    def __init__(self, vocab_size, embedding_dim, num_filters, lstm_hidden, dropout=0.3):
+    def __init__(self, vocab_size, embedding_dim, num_filters, lstm_hidden, k_range, dropout=0.3):
         super().__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
         self.embedding_dropout = nn.Dropout(dropout)
@@ -78,7 +77,7 @@ class ImprovedBinaryPropagandaModel(nn.Module):
                 nn.BatchNorm1d(num_filters),
                 nn.ReLU(),
                 nn.Dropout(dropout / 2)
-            ) for k in [3, 5]
+            ) for k in k_range
         ])
 
         cnn_output_size = num_filters * len(self.conv_layers)
@@ -195,163 +194,14 @@ class ImprovedCascadePropagandaPipeline(CascadePropagandaPipeline):
             'dropout_factor': 1.1
         }
 
-    def _get_binary_model_layers(self):
-        """Переопределяем информацию о слоях улучшенной бинарной модели."""
-        return {
-            'embedding': {
-                'type': 'Embedding',
-                'vocab_size': self.vocab_size,
-                'embedding_dim': self.embedding_dim,
-                'dropout': 0.3
-            },
-            'conv_layers': [{
-                'type': 'Sequential',
-                'layers': [
-                    {
-                        'type': 'Conv1d',
-                        'in_channels': self.embedding_dim,
-                        'out_channels': self.num_filters,
-                        'kernel_size': k,
-                        'padding': 'same'
-                    },
-                    {'type': 'BatchNorm1d', 'num_features': self.num_filters},
-                    {'type': 'ReLU'},
-                    {'type': 'Dropout', 'p': 0.15}
-                ]
-            } for k in [3, 5, 7]],
-            'bilstm': {
-                'type': 'LSTM',
-                'input_size': self.num_filters * 3,
-                'hidden_size': self.lstm_hidden,
-                'num_layers': 2,
-                'bidirectional': True,
-                'batch_first': True,
-                'dropout': 0.3
-            },
-            'attention': {
-                'type': 'EnhancedAttentionLayer',
-                'hidden_size': self.lstm_hidden * 2,
-                'num_heads': 8,
-                'dropout': 0.1
-            },
-            'classifier': [
-                {'type': 'Linear', 'in': self.lstm_hidden * 2, 'out': self.lstm_hidden},
-                {'type': 'LayerNorm', 'size': self.lstm_hidden},
-                {'type': 'ReLU'},
-                {'type': 'Dropout', 'p': 0.3},
-                {'type': 'Linear', 'in': self.lstm_hidden, 'out': self.lstm_hidden // 2},
-                {'type': 'LayerNorm', 'size': self.lstm_hidden // 2},
-                {'type': 'ReLU'},
-                {'type': 'Dropout', 'p': 0.15},
-                {'type': 'Linear', 'in': self.lstm_hidden // 2, 'out': 2}
-            ]
-        }
-
-    def _get_technique_model_layers(self):
-        """Переопределяем информацию о слоях улучшенной модели техник."""
-        if not hasattr(self, 'technique_model'):
-            return {}
-
-        return {
-            'embedding': {
-                'type': 'Embedding',
-                'vocab_size': self.vocab_size,
-                'embedding_dim': self.embedding_dim,
-                'dropout': 0.3
-            },
-            'conv_layers': [{
-                'type': 'Sequential',
-                'layers': [
-                    {
-                        'type': 'Conv1d',
-                        'in_channels': self.embedding_dim,
-                        'out_channels': self.num_filters,
-                        'kernel_size': k,
-                        'padding': 'same'
-                    },
-                    {'type': 'BatchNorm1d', 'num_features': self.num_filters},
-                    {'type': 'ReLU'},
-                    {'type': 'Dropout', 'p': 0.15}
-                ]
-            } for k in [3, 5]],
-            'layer_norm': [
-                {'type': 'LayerNorm', 'size': self.num_filters * 4},
-                {'type': 'LayerNorm', 'size': self.lstm_hidden * 2}
-            ],
-            'bilstm': {
-                'type': 'LSTM',
-                'input_size': self.num_filters * 4,
-                'hidden_size': self.lstm_hidden,
-                'num_layers': 3,
-                'bidirectional': True,
-                'batch_first': True,
-                'dropout': 0.3
-            },
-            'attention': {
-                'word_attention': {
-                    'type': 'AttentionLayer',
-                    'hidden_size': self.lstm_hidden * 2,
-                    'num_heads': 8
-                },
-                'sent_attention': {
-                    'type': 'AttentionLayer',
-                    'hidden_size': self.lstm_hidden * 2,
-                    'num_heads': 8
-                }
-            },
-            'classifier': [
-                {'type': 'Linear', 'in': self.lstm_hidden * 8, 'out': self.lstm_hidden * 4},
-                {'type': 'ReLU'},
-                {'type': 'Dropout', 'p': 0.3},
-                {'type': 'BatchNorm1d', 'size': self.lstm_hidden * 4},
-                {'type': 'Linear', 'in': self.lstm_hidden * 4, 'out': len(self.technique_encoder.classes_)}
-            ]
-        }
-
-    def _get_detailed_params(self):
-        """Переопределяем метод для добавления дополнительной информации."""
-        params = super()._get_detailed_params()
-
-        params['training_features'] = {
-            'gradient_clipping': True,
-            'clip_value': self.training_config['gradient_clip_val'],
-            'mixed_precision': self.training_config['amp_enabled'],
-            'adaptive_regularization': True,
-            'early_stopping': {
-                'patience': self.training_config['early_stopping_patience'],
-                'min_improvement': self.training_config['min_improvement']
-            },
-            'scheduler': {
-                'type': 'CosineAnnealingWarmRestarts',
-                'T0': self.training_config['scheduler_T0'],
-                'T_mult': self.training_config['scheduler_T_mult'],
-                'eta_min': self.training_config['scheduler_eta_min']
-            },
-            'optimization': {
-                'gradient_accumulation_steps': self.training_config['gradient_accumulation_steps'],
-                'warmup_ratio': self.training_config['warmup_ratio'],
-                'weight_decay': self.training_config['weight_decay'],
-                'label_smoothing': self.training_config['label_smoothing']
-            }
-        }
-
-        params['monitoring'] = {
-            'best_metrics': self.best_metrics,
-            'checkpointing': {
-                'enabled': True,
-                'path': self.checkpoint_path
-            }
-        }
-
-        return params
-
     def train_binary_model(self, train_loader, val_loader):
         try:
             model = ImprovedBinaryPropagandaModel(
                 self.vocab_size,
                 self.embedding_dim,
                 self.num_filters,
-                self.lstm_hidden
+                self.lstm_hidden,
+                self.binary_k_range
             ).to(self.device)
 
             # Инициализация критерия потерь
@@ -364,7 +214,7 @@ class ImprovedCascadePropagandaPipeline(CascadePropagandaPipeline):
             else:
                 self.criterion = FocalLoss().to(self.device)
 
-            optimizer = torch.optim.AdamW(
+            self.optimizer = torch.optim.AdamW(
                 model.parameters(),
                 lr=self.learning_rate,
                 weight_decay=0.01,
@@ -373,7 +223,7 @@ class ImprovedCascadePropagandaPipeline(CascadePropagandaPipeline):
             )
 
             scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-                optimizer,
+                self.optimizer,
                 T_0=self.training_config['scheduler_T0'],
                 T_mult=self.training_config['scheduler_T_mult'],
                 eta_min=self.training_config['scheduler_eta_min']
@@ -383,11 +233,11 @@ class ImprovedCascadePropagandaPipeline(CascadePropagandaPipeline):
             best_val_loss = float('inf')
             no_improvement = 0
 
-            for epoch in range(self.num_epochs):
+            for epoch in range(self.num_epochs_binary):
                 # Обучение с обработкой ошибок
                 try:
                     train_metrics = self._train_epoch(
-                        model, train_loader, optimizer, scheduler
+                        model, train_loader, self.optimizer, scheduler
                     )
                     val_metrics = self._validate_epoch(model, val_loader)
 
@@ -406,7 +256,7 @@ class ImprovedCascadePropagandaPipeline(CascadePropagandaPipeline):
                         best_model = copy.deepcopy(model)
                         no_improvement = 0
                         # Сохраняем лучшую модель
-                        self._save_checkpoint(model, optimizer, epoch, val_metrics)
+                        self._save_checkpoint(model, self.optimizer, epoch, val_metrics)
                     else:
                         no_improvement += 1
                         if no_improvement >= self.training_config['early_stopping_patience']:
@@ -517,6 +367,34 @@ class ImprovedCascadePropagandaPipeline(CascadePropagandaPipeline):
         required_keys = ['input_ids', 'attention_mask', 'binary_label']
         return all(key in batch for key in required_keys)
 
+    def _adjust_regularization(self, model):
+        """Адаптивно настраивает регуляризацию модели для борьбы с переобучением."""
+        # Настройка dropout
+        for module in model.modules():
+            if isinstance(module, nn.Dropout):
+                current_p = module.p
+                new_p = min(
+                    self.training_config['dropout_range'][1],
+                    current_p * self.training_config['dropout_factor']
+                )
+                module.p = new_p
+                logger.info(f"Adjusted dropout from {current_p:.3f} to {new_p:.3f}")
+
+        # Увеличение weight decay для оптимизатора
+        for param_group in self.optimizer.param_groups:
+            current_wd = param_group['weight_decay']
+            new_wd = current_wd * 1.1  # Увеличиваем weight decay на 10%
+            param_group['weight_decay'] = new_wd
+            logger.info(f"Adjusted weight decay from {current_wd:.6f} to {new_wd:.6f}")
+
+        # Усиление L2 регуляризации для линейных слоев
+        for module in model.modules():
+            if isinstance(module, nn.Linear):
+                if not hasattr(module, 'l2_strength'):
+                    module.l2_strength = 0.01
+                module.l2_strength *= 1.1  # Увеличиваем L2 регуляризацию на 10%
+                logger.info(f"Adjusted L2 regularization to {module.l2_strength:.6f}")
+
     def _calculate_batch_metrics(self, outputs, batch):
         """Вычисление метрик для батча."""
         preds = outputs.argmax(dim=1).cpu()
@@ -561,6 +439,12 @@ class ImprovedCascadePropagandaPipeline(CascadePropagandaPipeline):
         self.warmup_steps = checkpoint['warmup_steps']
         self.class_weights = checkpoint['class_weights']
 
+        try:
+            self.binary_k_range = checkpoint['binary_k_range']
+            self.technique_k_range = checkpoint['technique_k_range']
+        except:
+            pass
+
         # Загружаем токенизатор
         self.tokenizer = AutoTokenizer.from_pretrained(checkpoint['tokenizer_name'])
 
@@ -569,7 +453,8 @@ class ImprovedCascadePropagandaPipeline(CascadePropagandaPipeline):
             self.vocab_size,
             self.embedding_dim,
             self.num_filters,
-            self.lstm_hidden
+            self.lstm_hidden,
+            self.binary_k_range
         ).to(self.device)
         self.binary_model.load_state_dict(checkpoint['binary_model_state'])
 
@@ -580,7 +465,8 @@ class ImprovedCascadePropagandaPipeline(CascadePropagandaPipeline):
             self.embedding_dim,
             self.num_filters,
             self.lstm_hidden,
-            num_classes
+            num_classes,
+            self.technique_k_range
         ).to(self.device)
         self.technique_model.load_state_dict(checkpoint['technique_model_state'])
 
@@ -613,226 +499,20 @@ class ImprovedCascadePropagandaPipeline(CascadePropagandaPipeline):
         for k, v in val_metrics.items():
             logger.info(f"{k}: {v:.4f}")
 
-    def get_params(self, detailed=True):
-        """
-        Получение параметров моделей и конфигурации.
-
-        Args:
-            detailed (bool): Если True, возвращает детальную информацию о слоях
-
-        Returns:
-            dict: Словарь с параметрами
-        """
-
-        if not hasattr(self, 'binary_model') or not hasattr(self, 'technique_model'):
-            self._load_models()
-
-        # Базовые параметры
-        params = {
-            'model_version': {
-                'binary_model': 'ImprovedBinaryPropagandaModel'
-                if isinstance(self.binary_model, ImprovedBinaryPropagandaModel)
-                else 'BinaryPropagandaModel',
-                'technique_model': 'TechniquePropagandaModel'
-            },
-            'general_config': {
-                'device': self.device,
-                'batch_size': self.batch_size,
-                'num_epochs': self.num_epochs,
-                'learning_rate': self.learning_rate,
-                'warmup_steps': self.warmup_steps,
-                'max_length': self.max_length,
-                'class_weights': self.class_weights
-            },
-            'model_architecture': {
-                'vocab_size': self.vocab_size,
-                'embedding_dim': self.embedding_dim,
-                'num_filters': self.num_filters,
-                'lstm_hidden': self.lstm_hidden
-            },
-            'training_config': {
-                'gradient_clip_val': self.training_config['gradient_clip_val'],
-                'early_stopping_patience': self.training_config['early_stopping_patience'],
-                'scheduler_config': {
-                    'T0': self.training_config['scheduler_T0'],
-                    'T_mult': self.training_config['scheduler_T_mult'],
-                    'eta_min': self.training_config['scheduler_eta_min']
-                },
-                'dropout_config': {
-                    'range': self.training_config['dropout_range'],
-                    'factor': self.training_config['dropout_factor']
-                }
-            }
-        }
-
-        if detailed:
-            # Детальная информация о слоях
-            binary_model_layers = {
-                'embedding': {
-                    'type': 'Embedding',
-                    'vocab_size': self.vocab_size,
-                    'embedding_dim': self.embedding_dim
-                },
-                'conv_layers': [{
-                    'type': 'Conv1d',
-                    'in_channels': self.embedding_dim,
-                    'out_channels': self.num_filters,
-                    'kernel_size': k,
-                    'padding': 'same'
-                } for k in [3, 4, 5]],
-                'bilstm': {
-                    'type': 'LSTM',
-                    'input_size': self.num_filters * 3,  # 3 conv layers
-                    'hidden_size': self.lstm_hidden,
-                    'num_layers': 2,
-                    'bidirectional': True,
-                    'batch_first': True
-                },
-                'attention': {
-                    'type': 'EnhancedAttentionLayer',
-                    'hidden_size': self.lstm_hidden * 2,
-                    'num_heads': 8
-                },
-                'classifier': [
-                    {'type': 'Linear', 'in': self.lstm_hidden * 2, 'out': self.lstm_hidden},
-                    {'type': 'LayerNorm', 'size': self.lstm_hidden},
-                    {'type': 'ReLU'},
-                    {'type': 'Dropout', 'p': 0.3},
-                    {'type': 'Linear', 'in': self.lstm_hidden, 'out': self.lstm_hidden // 2},
-                    {'type': 'LayerNorm', 'size': self.lstm_hidden // 2},
-                    {'type': 'ReLU'},
-                    {'type': 'Dropout', 'p': 0.15},
-                    {'type': 'Linear', 'in': self.lstm_hidden // 2, 'out': 2}
-                ]
-            }
-
-            technique_model_layers = {
-                'embedding': {
-                    'type': 'Embedding',
-                    'vocab_size': self.vocab_size,
-                    'embedding_dim': self.embedding_dim
-                },
-                'conv_layers': [{
-                    'type': 'Conv1d',
-                    'in_channels': self.embedding_dim,
-                    'out_channels': self.num_filters,
-                    'kernel_size': k,
-                    'padding': 'same'
-                } for k in [2, 3, 4, 5]],
-                'bilstm': {
-                    'type': 'LSTM',
-                    'input_size': self.num_filters * 4,  # 4 conv layers
-                    'hidden_size': self.lstm_hidden,
-                    'num_layers': 3,
-                    'bidirectional': True,
-                    'batch_first': True,
-                    'dropout': 0.3
-                },
-                'attention': {
-                    'word_attention': {
-                        'type': 'AttentionLayer',
-                        'hidden_size': self.lstm_hidden * 2,
-                        'num_heads': 8
-                    },
-                    'sent_attention': {
-                        'type': 'AttentionLayer',
-                        'hidden_size': self.lstm_hidden * 2,
-                        'num_heads': 8
-                    }
-                },
-                'classifier': [
-                    {'type': 'Linear', 'in': self.lstm_hidden * 8, 'out': self.lstm_hidden * 4},
-                    {'type': 'ReLU'},
-                    {'type': 'Dropout', 'p': 0.3},
-                    {'type': 'BatchNorm1d', 'size': self.lstm_hidden * 4},
-                    {'type': 'Linear', 'in': self.lstm_hidden * 4, 'out': len(self.technique_encoder.classes_)}
-                ]
-            }
-
-            params.update({
-                'binary_model_layers': binary_model_layers,
-                'technique_model_layers': technique_model_layers,
-                'tokenizer': {'name': 'bert-base-uncased'},
-                'num_technique_classes': len(self.technique_encoder.classes_),
-                'technique_classes': self.technique_encoder.classes_.tolist()
-            })
-
-        return params
-
-    def print_params(self, detailed=True):
-        """
-        Печать параметров в удобочитаемом формате.
-        """
-        params = self.get_params(detailed)
-        print("\n=== Model Parameters ===")
-
-        print("\nModel Versions:")
-        for model, version in params['model_version'].items():
-            print(f"  {model}: {version}")
-
-        print("\nGeneral Configuration:")
-        for param, value in params['general_config'].items():
-            print(f"  {param}: {value}")
-
-        print("\nModel Architecture:")
-        for param, value in params['model_architecture'].items():
-            print(f"  {param}: {value}")
-
-        print("\nTraining Configuration:")
-        for param, value in params['training_config'].items():
-            if isinstance(value, dict):
-                print(f"  {param}:")
-                for sub_param, sub_value in value.items():
-                    print(f"    {sub_param}: {sub_value}")
-            else:
-                print(f"  {param}: {value}")
-
-        if detailed:
-            print("\nBinary Model Layers:")
-            self._print_layers(params['binary_model_layers'])
-
-            print("\nTechnique Model Layers:")
-            self._print_layers(params['technique_model_layers'])
-
-            print("\nTechnique Classes:")
-            print(f"  Number of classes: {params['num_technique_classes']}")
-            print("  Classes:", ", ".join(params['technique_classes']))
-
-    def _print_layers(self, layers, indent=2):
-        """
-        Вспомогательный метод для печати информации о слоях.
-        """
-        for layer_name, layer_info in layers.items():
-            if isinstance(layer_info, list):
-                print(" " * indent + f"{layer_name}:")
-                for i, layer in enumerate(layer_info):
-                    print(" " * (indent + 2) + f"[{i}] {layer['type']}:")
-                    for param, value in layer.items():
-                        if param != 'type':
-                            print(" " * (indent + 4) + f"{param}: {value}")
-            else:
-                print(" " * indent + f"{layer_name}:")
-                for param, value in layer_info.items():
-                    if isinstance(value, dict):
-                        print(" " * (indent + 2) + f"{param}:")
-                        for sub_param, sub_value in value.items():
-                            print(" " * (indent + 4) + f"{sub_param}: {sub_value}")
-                    else:
-                        print(" " * (indent + 2) + f"{param}: {value}")
-
 
 if __name__ == "__main__":
     # Инициализация пайплайна
     pipeline = ImprovedCascadePropagandaPipeline(
         model_path="../models",
-        model_name="icpm_v2",
+        model_name="icpm_v3",
         batch_size=32,
         num_epochs=10,
         learning_rate=2e-5,
         warmup_steps=1000,
         max_length=512,
         class_weights=True,
-        # device="cpu"
+        binary_k_range=[2, 3, 4],
+        technique_k_range=[3, 4, 5, 6, 7],
     )
 
     # Обучение и оценка
