@@ -27,14 +27,13 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-
 logger = logging.getLogger(__name__)
 
 
 class FocalLoss(nn.Module):
     """Focal Loss для работы с несбалансированными классами."""
 
-    def __init__(self, alpha=None, gamma=2):
+    def __init__(self, alpha=None, gamma=2.0):
         super().__init__()
         self.gamma = gamma
         self.alpha = alpha
@@ -480,8 +479,10 @@ class CascadePropagandaPipeline:
             warmup_steps: int = 1000,
             max_length: int = 512,
             class_weights: bool = True,
-            binary_k_range: list[int] = [3,4,5],
-            technique_k_range: list[int] = [2,3,4,5],
+            binary_k_range: list[int] = [3, 4, 5],
+            technique_k_range: list[int] = [2, 3, 4, 5],
+            dataset_distribution: float = 0.9,
+            use_ukrainian: bool = False,
             **kwargs
     ):
         self.model_path = model_path
@@ -498,7 +499,15 @@ class CascadePropagandaPipeline:
         self.binary_k_range = binary_k_range
         self.technique_k_range = technique_k_range
 
-        self.tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+        self.dataset_distribution = dataset_distribution
+
+        self.use_ukrainian = use_ukrainian
+
+        if self.use_ukrainian:
+            self.tokenizer = AutoTokenizer.from_pretrained('google-bert/bert-base-multilingual-cased')
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+
         self._initialize_components()
 
         logger.info(f"Initialized pipeline on device: {device}")
@@ -819,7 +828,7 @@ class CascadePropagandaPipeline:
             binary_dataset, technique_dataset = self.create_datasets(data)
 
             # Разделяем на train/val для бинарной модели
-            train_size = int(0.9 * len(binary_dataset))
+            train_size = int(self.dataset_distribution * len(binary_dataset))
             val_size = len(binary_dataset) - train_size
 
             binary_train_dataset, binary_val_dataset = torch.utils.data.random_split(
@@ -829,7 +838,7 @@ class CascadePropagandaPipeline:
             )
 
             # Для модели техник используем обычное разделение, как для бинарной модели
-            technique_train_size = int(0.9 * len(technique_dataset))
+            technique_train_size = int(self.dataset_distribution * len(technique_dataset))
             technique_val_size = len(technique_dataset) - technique_train_size
 
             technique_train_dataset, technique_val_dataset = torch.utils.data.random_split(
@@ -909,7 +918,7 @@ class CascadePropagandaPipeline:
             for batch in binary_val_loader:
                 batch = {k: v.to(self.device) for k, v in batch.items()}
                 extra_features = batch.get('extra_features')
-                outputs = self.binary_model(batch['input_ids'], batch['attention_mask'], extra_features)
+                outputs = self.binary_model(batch['input_ids'], batch['attention_mask'])
                 probs = torch.softmax(outputs, dim=1)
 
                 binary_preds.extend(outputs.argmax(dim=1).cpu().numpy())
@@ -1017,7 +1026,7 @@ class CascadePropagandaPipeline:
             'technique_k_range': self.technique_k_range,
 
             # Параметры токенизатора
-            'tokenizer_name': 'bert-base-uncased',  # или другое имя, если используется другой токенизатор
+            'tokenizer_name': 'bert-base-uncased',
 
             # Дополнительные параметры
             'batch_size': self.batch_size,
@@ -1148,8 +1157,8 @@ class CascadePropagandaPipeline:
 
             text_base = texts
 
-            if not check_lang_corpus(texts, "en"):
-                texts = translate_corpus(texts)
+            # if not self.use_ukrainian:
+            #     texts = translate_corpus(texts)
 
             # Подготавливаем данные
             dataset = PropagandaDataset(
@@ -1307,14 +1316,15 @@ if __name__ == "__main__":
     # Инициализация пайплайна
     pipeline = CascadePropagandaPipeline(
         model_path="../models",
-        model_name="cpm_v6",
+        model_name="cpm_v4",
         batch_size=32,
         num_epochs_binary=10,
         num_epochs_technique=10,
         learning_rate=2e-5,
         warmup_steps=1000,
         max_length=512,
-        class_weights=True
+        class_weights=True,
+        dataset_distribution=0.95
     )
 
     # Обучение и оценка

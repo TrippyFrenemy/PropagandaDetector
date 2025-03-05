@@ -1,35 +1,33 @@
 import copy
 import logging
-import math
+from typing import List
 
 import numpy as np
 import pandas as pd
+import spacy
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-
-from typing import Dict, Optional, List, Counter
-
-from imblearn.over_sampling import SMOTE
-from imblearn.pipeline import Pipeline
-from imblearn.under_sampling import RandomUnderSampler
 from sklearn.metrics import f1_score
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import get_linear_schedule_with_warmup
 
 from data_manipulating.feature_extractor import TextFeatureExtractor
+from data_manipulating.feature_extractor_ua import TextFeatureExtractorUA
 from data_manipulating.manipulate_models import load_model, save_model
 from pipelines.cascade_classification import BinaryPropagandaModel, PropagandaDataset, CascadePropagandaPipeline, \
     FocalLoss, AttentionLayer, TechniquePropagandaModel
 from utils.translate import check_lang_corpus, translate_corpus
 
+
+# Настройка глобального логгера (root logger)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
+logging.getLogger("pymorphy3").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -191,11 +189,14 @@ class EnhancedBinaryPropagandaModel(nn.Module):
 class EnhancedPropagandaDataset(PropagandaDataset):
     """Enhanced dataset that includes additional text features."""
 
-    def __init__(self, data, tokenizer, max_length=512, binary_only=False, use_extra_features=True):
+    def __init__(self, data, tokenizer, max_length=512, binary_only=False, use_extra_features=True, use_ukrainian=False, nlp=None):
         super().__init__(data, tokenizer, max_length, binary_only)
         self.use_extra_features = use_extra_features
         if use_extra_features:
-            self.feature_extractor = TextFeatureExtractor()
+            if use_ukrainian:
+                self.feature_extractor = TextFeatureExtractorUA(nlp)
+            else:
+                self.feature_extractor = TextFeatureExtractor()
             self._extract_features()
 
     def _extract_features(self):
@@ -262,11 +263,12 @@ class EnhancedPropagandaDataset(PropagandaDataset):
 class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
     """Enhanced pipeline that supports both old and new models."""
 
-    def __init__(self, *args, use_extra_features=True, use_smote=True, smote_ratio=0.8,**kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, use_extra_features=True, use_ukrainian=False, **kwargs):
+        super().__init__(*args, use_extra_features=use_extra_features, use_ukrainian=use_ukrainian, **kwargs)
         self.use_extra_features = use_extra_features
-        self.use_smote = use_smote
-        self.smote_ratio = smote_ratio
+        self.use_ukrainian = use_ukrainian
+        if self.use_ukrainian:
+            self.nlp = spacy.load("uk_core_news_sm")
 
     def create_datasets(self, data: pd.DataFrame):
         """Create datasets with support for additional features."""
@@ -277,6 +279,8 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
             max_length=self.max_length,
             binary_only=True,
             use_extra_features=self.use_extra_features,
+            use_ukrainian=self.use_ukrainian,
+            nlp=self.nlp if hasattr(self, "nlp") else None,
         )
 
         propaganda_mask = data['technique'].apply(
@@ -292,6 +296,8 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
             max_length=self.max_length,
             binary_only=False,
             use_extra_features=self.use_extra_features,
+            use_ukrainian=self.use_ukrainian,
+            nlp=self.nlp if hasattr(self, "nlp") else None,
         )
 
         self.technique_encoder = technique_dataset.technique_encoder
@@ -305,7 +311,7 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
             self.num_filters,
             self.lstm_hidden,
             self.binary_k_range,
-            use_extra_features=self.use_extra_features
+            use_extra_features=self.use_extra_features,
         ).to(self.device)
 
         # Создаем оптимизатор и планировщик
@@ -421,7 +427,7 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
     def predict(self, texts: List[str], print_results: bool = True):
         """Predict with support for both old and enhanced models."""
         try:
-            # Загружаем модели если нужно
+            # Загружаем модели если их нет
             if not hasattr(self, 'binary_model') or not hasattr(self, 'technique_model'):
                 self._load_models()
 
@@ -430,8 +436,8 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
 
             text_base = texts
 
-            if not check_lang_corpus(texts, "en"):
-                texts = translate_corpus(texts)
+            # if not self.use_ukrainian:
+            #     texts = translate_corpus(texts)
 
             # Проверяем тип модели и соответственно создаем датасет
             is_enhanced = isinstance(self.binary_model, EnhancedBinaryPropagandaModel)
@@ -445,7 +451,9 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
                 self.tokenizer,
                 max_length=self.max_length,
                 binary_only=False,
-                use_extra_features=is_enhanced
+                use_extra_features=is_enhanced,
+                use_ukrainian=self.use_ukrainian,
+                nlp=self.nlp if hasattr(self, "nlp") else None,
             )
 
             dataloader = DataLoader(
@@ -552,7 +560,6 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
             logger.error(f"Prediction failed: {str(e)}")
             raise
 
-
     def _save_models(self):
         """Save models and all parameters."""
         state = {
@@ -571,9 +578,10 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
             'binary_k_range': self.binary_k_range,
             'technique_k_range': self.technique_k_range,
             'use_extra_features': self.use_extra_features,
+            'use_ukrainian': self.use_ukrainian,
 
             # Tokenizer info
-            'tokenizer_name': 'bert-base-uncased',
+            'tokenizer_name': 'bert-base-uncased' if not self.use_ukrainian else 'google-bert/bert-base-multilingual-cased',
 
             # Training parameters
             'batch_size': self.batch_size,
@@ -599,13 +607,11 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
         self.warmup_steps = checkpoint.get('warmup_steps', self.warmup_steps)
         self.class_weights = checkpoint.get('class_weights', self.class_weights)
         self.use_extra_features = checkpoint.get('use_extra_features', True)
+        self.use_ukrainian = checkpoint.get('use_ukrainian', False)
 
-        try:
-            self.binary_k_range = checkpoint.get('binary_k_range', [3, 4, 5])
-            self.technique_k_range = checkpoint.get('technique_k_range', [2, 3, 4, 5])
-        except:
-            self.binary_k_range = [3, 4, 5]
-            self.technique_k_range = [2, 3, 4, 5]
+
+        self.binary_k_range = checkpoint.get('binary_k_range', [3, 4, 5])
+        self.technique_k_range = checkpoint.get('technique_k_range', [2, 3, 4, 5])
 
         self.tokenizer = checkpoint.get('tokenizer')
 
@@ -662,25 +668,25 @@ if __name__ == "__main__":
     # Инициализация пайплайна
     pipeline = EnhancedCascadePropagandaPipeline(
         model_path="../models",
-        model_name="ecpm_v2",
+        model_name="ecpm_ua_v1",
         batch_size=32,
-        num_epochs_binary=20,
+        num_epochs_binary=10,
         num_epochs_technique=10,
         learning_rate=2e-5,
         warmup_steps=1000,
         max_length=512,
         class_weights=True,
-        use_smote=True,
-        smote_ratio=0.8,
         binary_k_range=[2, 3, 4, 5, 6, 7],
         technique_k_range=[3, 4, 5],
+        dataset_distribution=0.9,
+        use_ukrainian=True
     )
 
     # Обучение и оценка
     try:
         logger.info("Starting training and evaluation...")
         metrics = pipeline.train_and_evaluate(
-            data_path="../datasets/tasks-2-3/combined_dataset.csv"
+            data_path="../datasets/tasks-2-3/combined_dataset_ua.csv"
         )
 
         logger.info("\nFinal Evaluation Results:")
@@ -694,34 +700,79 @@ if __name__ == "__main__":
 
     except Exception as e:
         logger.error(f"Pipeline execution failed: {str(e)}")
-        raise
 
-    # Тестовые предсказания
-    test_texts = [
-        "Orange is orange.",
-        "Why We should support our great nation.",
-        "Our country stands on the threshold of the greatest achievements in history. While malicious critics try to undermine our progress, we must remain united and steadfast. Our leader, continuing a long tradition of outstanding government, strives tirelessly for the benefit of every citizen.",
-        "Our leader is the best of the best all over the world.",
-        "The Everyday Struggle of Ordinary People Against Feminist Influence.",
-        "In these difficult times, when national and international enemies threaten our way of life, our indomitable leader stands guard over stability and development. Thanks to his wise and decisive actions, our country's economy is experiencing unprecedented growth.",
-        "We stand on the threshold of the greatest challenges of our time. Our society, our traditions and our history are under attack from those who want to see us weakened and divided. Do not be deceived: our enemies are both internal traitors and external aggressors.",
-        "Pamela Geller and Robert Spencer co founded anti Muslim group Stop Islamization of America.",
-        "Children loves chocolate.",
-        "Little Kate always looks forward to the weekend to go for a walk in the nearby park.",
-        "Make sure you use the correct instances of models and vectorizers for testing that match the number of features used in the trained models.",
-        "Save the crowbar from the ship to blow up the Japanese.",
-        "Destroy this crazy beast. Enroll in the US Army.",
-        "Fulfill the five-year plan not in five years, but in four.",
-        "Death to capital or death under the heel of capital!",
-        "Workers of the world, unite! For a worldwide October!",
-        "Why we fight - for our children`s bread."
-    ]
-
-    try:
-        logger.info("Running predictions on test texts...")
-        results, formatted = pipeline.predict(test_texts, True)
-        print(formatted)
-
-    except Exception as e:
-        logger.error(f"Prediction failed: {str(e)}")
-        raise
+    # del pipeline, metrics
+    #
+    # pipeline = EnhancedCascadePropagandaPipeline(
+    #     model_path="../models",
+    #     model_name="ecpm_ua_v2",
+    #     batch_size=32,
+    #     num_epochs_binary=15,
+    #     num_epochs_technique=10,
+    #     learning_rate=2e-5,
+    #     warmup_steps=1000,
+    #     max_length=512,
+    #     class_weights=True,
+    #     binary_k_range=[3, 5, 7],
+    #     technique_k_range=[2, 3, 4, 5, 6],
+    #     dataset_distribution=0.8,
+    #     use_ukrainian=True
+    # )
+    #
+    # # Обучение и оценка
+    # try:
+    #     logger.info("Starting training and evaluation...")
+    #     metrics = pipeline.train_and_evaluate(
+    #         data_path="../datasets/tasks-2-3/combined_dataset_ua.csv"
+    #     )
+    #
+    #     logger.info("\nFinal Evaluation Results:")
+    #     logger.info("\nBinary Classification Metrics:")
+    #     for metric, value in metrics['binary_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    #     logger.info("\nTechnique Classification Metrics:")
+    #     for metric, value in metrics['technique_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    # except Exception as e:
+    #     logger.error(f"Pipeline execution failed: {str(e)}")
+    #
+    # del pipeline, metrics
+    #
+    # pipeline = EnhancedCascadePropagandaPipeline(
+    #     model_path="../models",
+    #     model_name="ecpm_ua_v3",
+    #     batch_size=32,
+    #     num_epochs_binary=15,
+    #     num_epochs_technique=10,
+    #     learning_rate=2e-5,
+    #     warmup_steps=1000,
+    #     max_length=512,
+    #     class_weights=True,
+    #     binary_k_range=[2, 3, 4, 5, 6, 7],
+    #     technique_k_range=[3, 4, 5, 6],
+    #     dataset_distribution=0.8,
+    #     use_ukrainian=True
+    # )
+    #
+    # # Обучение и оценка
+    # try:
+    #     logger.info("Starting training and evaluation...")
+    #     metrics = pipeline.train_and_evaluate(
+    #         data_path="../datasets/tasks-2-3/combined_dataset_ua.csv"
+    #     )
+    #
+    #     logger.info("\nFinal Evaluation Results:")
+    #     logger.info("\nBinary Classification Metrics:")
+    #     for metric, value in metrics['binary_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    #     logger.info("\nTechnique Classification Metrics:")
+    #     for metric, value in metrics['technique_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    # except Exception as e:
+    #     logger.error(f"Pipeline execution failed: {str(e)}")
+    #
+    # del pipeline, metrics

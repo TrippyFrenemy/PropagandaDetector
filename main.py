@@ -8,11 +8,12 @@ from fastapi.responses import HTMLResponse
 from sklearn.inspection import permutation_importance
 from starlette.templating import Jinja2Templates
 
-from config import FOREST_PATH, TFIDF_PATH, MODEL_PATH, CASCADE_PATH, IMPROVED_CASCADE_PATH
+from config import FOREST_PATH, TFIDF_PATH, MODEL_PATH, CASCADE_PATH, IMPROVED_CASCADE_PATH, UA_CASCADE_PATH
 from data_manipulating.manipulate_models import load_model, load_vectorizer
 from data_manipulating.preprocessing import Preprocessor
 from pipelines.cascade_classification import CascadePropagandaPipeline
 from pipelines.improved_cascade import ImprovedCascadePropagandaPipeline
+from pipelines.enhanced_cascade import EnhancedCascadePropagandaPipeline
 from utils.add_data_to_csv import add_data_to_csv
 from utils.translate import check_lang_corpus, translate_corpus
 
@@ -23,13 +24,20 @@ async def lifespan(app: FastAPI):
     app.vectorizer = load_vectorizer(f"{TFIDF_PATH}")
     app.threshold = 0.45
 
-    app.cascade_pipeline = CascadePropagandaPipeline(
+    # app.cascade_pipeline = CascadePropagandaPipeline(
+    #     model_path=f"{MODEL_PATH}",
+    #     model_name=f"{CASCADE_PATH}"
+    # )
+    #
+    # app.improved_cascade_pipeline = ImprovedCascadePropagandaPipeline(
+    #     model_path=f"{MODEL_PATH}",
+    #     model_name=f"{IMPROVED_CASCADE_PATH}"
+    # )
+
+    app.enhanced_cascade_ua_pipeline = EnhancedCascadePropagandaPipeline(
         model_path=f"{MODEL_PATH}",
-        model_name=f"{CASCADE_PATH}"
-    )
-    app.improved_cascade_pipeline = ImprovedCascadePropagandaPipeline(
-        model_path=f"{MODEL_PATH}",
-        model_name=f"{IMPROVED_CASCADE_PATH}"
+        model_name=f"{UA_CASCADE_PATH}",
+        use_ukrainian=True,
     )
 
     print("Model parameters:     ", app.model.get_params())
@@ -125,19 +133,19 @@ async def classification(request: Request, text: str = Form(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/improved_classification", response_class=HTMLResponse)
-async def improved_classification(request: Request):
+@app.get("/cascade_classification", response_class=HTMLResponse)
+async def cascade_classification(request: Request):
     return templates.TemplateResponse("form.html", {"request": request})
 
 
-@app.post("/improved_classification", response_class=HTMLResponse)
-async def improved_classification(request: Request, text: str = Form(...)):
+@app.post("/cascade_classification", response_class=HTMLResponse)
+async def cascade_classification(request: Request, text: str = Form(...)):
     try:
         start = time.time()
 
         text = await check_text(text)
 
-        results, formatted = app.cascade_pipeline.predict(text, True)
+        results, formatted = app.enhanced_cascade_ua_pipeline.predict(text, True)
 
         end = time.time()
         length = end - start

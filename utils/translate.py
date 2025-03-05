@@ -16,19 +16,16 @@ translator = Translator(
 def translate_csv(input_path, output_path):
     # Открываем .csv файл для чтения и новый .csv файл для записи результатов
     with open(input_path, 'r', encoding='utf-8') as input_file, open(output_path, 'w', encoding='utf-8', newline='') as output_file:
-        csv_reader = csv.reader(input_file, delimiter=";")
-        csv_writer = csv.writer(output_file, delimiter=";")
+        csv_reader = csv.reader(input_file, delimiter=",")
+        csv_writer = csv.writer(output_file, delimiter=",")
         # Читаем каждую строку из входного файла
         for row in tqdm(csv_reader):
             try:
-                # Текст для перевода находится в первом столбце каждой строки
-                text_to_translate = str(row[0])
-
-                # Переводим текст
-                translated_text = translate_text(text_to_translate)
-
-                # Записываем переведенный текст в выходной файл
-                csv_writer.writerow([translated_text, row[1]])
+                row[2] = translate_text(row[2])
+                if row[5]:
+                    row[5] = translate_text(row[5])
+                csv_writer.writerow(row)
+                time.sleep(0.1)
 
             except Exception as ex:
                 print(ex)
@@ -60,7 +57,7 @@ def check_lang_corpus(corpus_to_translate, lang="uk"):
 
 
 if __name__ == '__main__':
-    INPUT_PATH = '../datasets/propaganda_on_sentence_level.csv'
-    OUTPUT_PATH = '../datasets/propaganda_on_sentence_level_ua_not_provided.csv'
+    INPUT_PATH = '../datasets/tasks-2-3/combined_dataset.csv'
+    OUTPUT_PATH = '../datasets/tasks-2-3/combined_dataset_ua.csv'
 
     translate_csv(INPUT_PATH, OUTPUT_PATH)
