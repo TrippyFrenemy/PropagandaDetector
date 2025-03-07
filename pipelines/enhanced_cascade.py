@@ -424,7 +424,7 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
 
         return best_model
 
-    def predict(self, texts: List[str], print_results: bool = True):
+    def predict(self, texts: List[str], print_results: bool = True, use_translate: bool = False):
         """Predict with support for both old and enhanced models."""
         try:
             # Загружаем модели если их нет
@@ -436,8 +436,8 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
 
             text_base = texts
 
-            # if not self.use_ukrainian:
-            #     texts = translate_corpus(texts)
+            if not self.use_ukrainian and use_translate:
+                texts = translate_corpus(texts)
 
             # Проверяем тип модели и соответственно создаем датасет
             is_enhanced = isinstance(self.binary_model, EnhancedBinaryPropagandaModel)
