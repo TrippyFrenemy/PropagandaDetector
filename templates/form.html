@@ -25,13 +25,39 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+    .file-upload {
+        margin: 10px 0;
+    }
+    .language-selector {
+        margin: 10px 0;
+    }
+    .or-divider {
+        margin: 15px 0;
+        text-align: center;
+        font-weight: bold;
+    }
 </style>
 
 {% block content %}
     <div id="content">
         <h2>If you want to put text corpus, divide them by this symbol: ";", ".", "!", "?"</h2>
-        <form id="text-form" method="post">
-            <textarea name="text" required></textarea>
+        <form id="text-form" method="post" enctype="multipart/form-data">
+            <label for="text-input">Enter your text:</label><br>
+            <textarea id="text-input" name="text"></textarea><br><br>
+
+            <label for="file-input">Upload a .txt file:</label><br>
+            <input type="file" id="file-input" name="file" accept=".txt"><br><br>
+
+            {% if request.url.path == "/cascade_classification" %}
+            <div class="language-selector">
+                <label for="language">Select language:</label>
+                <select id="language" name="language">
+                    <option value="ua">Ukrainian</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            {% endif %}
+
             <button type="submit">Submit</button>
         </form>
     </div>
@@ -44,6 +70,16 @@
 
     <script>
         document.getElementById('text-form').addEventListener('submit', function(event) {
+            // Check if at least one input method is provided
+            const textInput = document.getElementById('text-input').value;
+            const fileInput = document.getElementById('file-input').files[0];
+
+            if (!textInput && !fileInput) {
+                event.preventDefault();
+                alert('Please either enter text or upload a file.');
+                return;
+            }
+
             document.getElementById('content').style.display = 'none';
             document.getElementById('loading-spinner').style.display = 'block';
             document.getElementById('loading-text').style.display = 'block';

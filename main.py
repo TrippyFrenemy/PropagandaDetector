@@ -24,15 +24,10 @@ async def lifespan(app: FastAPI):
     app.vectorizer = load_vectorizer(f"{TFIDF_PATH}")
     app.threshold = 0.45
 
-    # app.cascade_pipeline = CascadePropagandaPipeline(
-    #     model_path=f"{MODEL_PATH}",
-    #     model_name=f"{CASCADE_PATH}"
-    # )
-    #
-    # app.improved_cascade_pipeline = ImprovedCascadePropagandaPipeline(
-    #     model_path=f"{MODEL_PATH}",
-    #     model_name=f"{IMPROVED_CASCADE_PATH}"
-    # )
+    app.cascade_pipeline = CascadePropagandaPipeline(
+        model_path=f"{MODEL_PATH}",
+        model_name=f"{CASCADE_PATH}"
+    )
 
     app.enhanced_cascade_ua_pipeline = EnhancedCascadePropagandaPipeline(
         model_path=f"{MODEL_PATH}",
@@ -52,13 +47,13 @@ templates = Jinja2Templates(directory="templates")
 
 
 async def check_text(text):
-    for char in [';', '!', '?', '\n']:
+    for char in [';', '!', '?', '\r\n', '\n']:
         text = text.replace(char, '.')
 
     text = [sentence.strip() for sentence in text.split('.')
             if len(sentence.strip()) > 3]
 
-    if text[-1] == "":
+    if text and text[-1] == "":
         text = text[:-1]
 
     # Check the length of each element
@@ -69,23 +64,45 @@ async def check_text(text):
     return text
 
 
+async def process_text_input(text=None, file=None):
+    """Process either text input or file input"""
+    if text and text.strip():
+        return text.strip()
+    elif file:
+        try:
+            contents = await file.read()
+            return contents.decode('utf-8')
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error reading file: {str(e)}")
+    else:
+        raise HTTPException(status_code=400, detail="Either text or file must be provided")
+
+
 @app.get("/", response_class=HTMLResponse)
 async def classification(request: Request):
     return templates.TemplateResponse("form.html", {"request": request})
 
 
 @app.post("/", response_class=HTMLResponse)
-async def classification(request: Request, text: str = Form(...)):
+async def classification(
+        request: Request,
+        text: str = Form(None),
+        file: UploadFile = File(None)
+):
     try:
         start = time.time()
 
-        text = await check_text(text)
+        # Process either text input or file input
+        input_text = await process_text_input(text, file)
 
-        if not check_lang_corpus(text, "en"):
-            text = translate_corpus(text)
+        # Check and preprocess the text
+        processed_text = await check_text(input_text)
+
+        if not check_lang_corpus(processed_text, "en"):
+            processed_text = translate_corpus(processed_text)
 
         preprocessing = Preprocessor()
-        preprocessed_text = preprocessing.preprocess_corpus(text, lemma=True)
+        preprocessed_text = preprocessing.preprocess_corpus(processed_text, lemma=True)
         vectorized_text = app.vectorizer.transform(preprocessed_text)
         vectorized_text_dense = vectorized_text.toarray()
 
@@ -96,29 +113,18 @@ async def classification(request: Request, text: str = Form(...)):
         feature_names = app.vectorizer.get_feature_names_out()
         tfidf_values = vectorized_text_dense
 
-        # Feature importances from the Random Forest model
-        # feature_importances = app.model.feature_importances_
-
-        # Пермутационная важность признаков
-        # perm_importance = permutation_importance(app.model, vectorized_text_dense, predicted_forest, n_repeats=10, random_state=0)
-        # perm_importance_values = perm_importance.importances_mean
-
         # Pack results with filtered TF-IDF values and feature importances based on preprocessed text
         results = []
-        for original, preprocessed, tfidf, prediction, percent in zip(text, preprocessed_text, tfidf_values, result_list_forest, app.model.predict_proba(vectorized_text_dense)[:, 1]):
+        for original, preprocessed, tfidf, prediction, percent in zip(processed_text, preprocessed_text, tfidf_values,
+                                                                      result_list_forest,
+                                                                      app.model.predict_proba(vectorized_text_dense)[:,
+                                                                      1]):
             words = preprocessed.split()
             word_tfidf = [(word, tfidf[feature_names.tolist().index(word)]) for word in words if word in feature_names]
-            # word_importance = [(word, feature_importances[feature_names.tolist().index(word)]) for word in words if word in feature_names]
-            # word_perm_importance = [(word, perm_importance_values[feature_names.tolist().index(word)]) for word in words if
-            #                         word in feature_names]
-            # avg_importance = sum([imp for _, imp in word_importance]) / len(word_importance) if word_importance else 0
             results.append({
                 "original": original,
                 "preprocessed": preprocessed,
                 "word_tfidf": word_tfidf,
-                # "word_importance": word_importance,
-                # "word_perm_importance": word_perm_importance,
-                # "avg_importance": avg_importance,
                 "percent": percent,
                 "status": prediction
             })
@@ -139,20 +145,36 @@ async def cascade_classification(request: Request):
 
 
 @app.post("/cascade_classification", response_class=HTMLResponse)
-async def cascade_classification(request: Request, text: str = Form(...)):
+async def cascade_classification(
+        request: Request,
+        text: str = Form(None),
+        file: UploadFile = File(None),
+        language: str = Form("en")
+):
     try:
         start = time.time()
 
-        text = await check_text(text)
+        # Process either text input or file input
+        input_text = await process_text_input(text, file)
 
-        results, formatted = app.enhanced_cascade_ua_pipeline.predict(text, True)
+        # Check and preprocess the text
+        processed_text = await check_text(input_text)
+
+        # Select the appropriate pipeline based on language
+        if language == "ua":
+            # Use Ukrainian pipeline
+            results, formatted = app.enhanced_cascade_ua_pipeline.predict(processed_text, True)
+        else:
+            # Use English pipeline
+            results, formatted = app.cascade_pipeline.predict(processed_text, True)
 
         end = time.time()
         length = end - start
 
         print("It took", length, "seconds!")
 
-        return templates.TemplateResponse("result.html", {"request": request, "results": results, "formatted": formatted})
+        return templates.TemplateResponse("result.html",
+                                          {"request": request, "results": results, "formatted": formatted})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -164,7 +186,6 @@ async def get_data_to_csv(request: Request):
 
 @app.post("/add")
 async def get_data_to_csv(request: Request, text: str = Form(None), files: list[UploadFile] = File(...)):
-
     if text:
         data = text.strip()
     else:
@@ -195,7 +216,8 @@ async def get_data_to_csv(request: Request, text: str = Form(None), files: list[
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    return templates.TemplateResponse("error.html", {"request": request, "detail": exc.detail}, status_code=exc.status_code)
+    return templates.TemplateResponse("error.html", {"request": request, "detail": exc.detail},
+                                      status_code=exc.status_code)
 
 
 if __name__ == "__main__":
