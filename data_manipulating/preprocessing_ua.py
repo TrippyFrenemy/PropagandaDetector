@@ -1,4 +1,5 @@
 import csv
+import os.path
 import re
 
 import emoji
@@ -7,8 +8,11 @@ from tqdm import tqdm
 
 class PreprocessorUA:
     def __init__(self, nlp):
+        stopwords_path = '../data_manipulating/stopwords_ua.txt'
+        if not os.path.exists(stopwords_path):
+            stopwords_path = 'data_manipulating/stopwords_ua.txt'
         # Використання українських стоп-слів
-        with open('../data_manipulating/stopwords_ua.txt', 'r', encoding='utf-8') as f:
+        with open(stopwords_path, 'r', encoding='utf-8') as f:
             self.__stop_words = set(line.strip().lower() for line in f if line.strip())
         # Завантаження української моделі spaCy
         self.nlp = nlp
@@ -50,8 +54,11 @@ class EnhancedPreprocessorUA(PreprocessorUA):
         super().__init__(nlp)
         # Завантаження тонального словника для аналізу тональності
         self.__sentiment_dict = {}
+        sentiment_path = '../data_manipulating/sentiment_ua.csv'
+        if not os.path.exists(sentiment_path):
+            sentiment_path = 'data_manipulating/sentiment_ua.csv'
         # self.__nlp = spacy.load('uk_core_news_sm')
-        with open('../data_manipulating/sentiment_ua.csv', 'r', encoding='utf-8-sig') as f:
+        with open(sentiment_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.reader(f, delimiter=';')
             next(reader, None)  # пропустити заголовок
             for word, value in reader:

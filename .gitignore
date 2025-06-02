@@ -172,7 +172,12 @@ tests/
 ПЗ32*
 ПЗ42*
 Диаграммы/
+Примеры/
+Публикации/
 checkpoints
 classification_configs
 models_back/*cpm*.pkl
 Пример датасета
+evaluation_results/
+
+.qodo

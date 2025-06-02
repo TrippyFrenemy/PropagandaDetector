@@ -6,6 +6,7 @@ from data_manipulating.preprocessing import Preprocessor
 from data_manipulating.manipulate_models import load_model, load_vectorizer
 from config_classification import MODEL_PATH, LAST_NAME
 from pipelines.cascade_classification import logger
+from utils.draw_report import draw_report
 from utils.translate import check_lang_corpus, translate_corpus
 
 text_neut = [
@@ -213,3 +214,5 @@ logger.info(f"Правильно определена пропаганда (True
 logger.info(f"Правильно определены чистые тексты (True Negatives): {true_negatives}")
 logger.info(f"Ложные срабатывания (False Positives): {false_positives}")
 logger.info(f"Пропущенная пропаганда (False Negatives): {false_negatives}")
+
+draw_report("Матриця розсіювання для випадкового лісу", y_pred_test, y_pred_forest, "forest_confusion_matrix", "jpg")

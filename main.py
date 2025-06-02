@@ -47,7 +47,7 @@ templates = Jinja2Templates(directory="templates")
 
 
 async def check_text(text):
-    for char in [';', '!', '?', '\r\n', '\n']:
+    for char in [';', '\r\n', '\n']:
         text = text.replace(char, '.')
 
     text = [sentence.strip() for sentence in text.split('.')
@@ -72,8 +72,10 @@ async def process_text_input(text=None, file=None):
         try:
             contents = await file.read()
             return contents.decode('utf-8')
-        except Exception as e:
+        except UnicodeDecodeError as e:
             raise HTTPException(status_code=400, detail=f"Error reading file: {str(e)}")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"File processing error: {str(e)}")
     else:
         raise HTTPException(status_code=400, detail="Either text or file must be provided")
 

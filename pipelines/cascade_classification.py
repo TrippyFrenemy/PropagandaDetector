@@ -519,7 +519,7 @@ class CascadePropagandaPipeline:
         self.num_filters = 256
         self.lstm_hidden = 256
 
-        self.patience = 3
+        self.patience = 10  # 3
         self.max_steps = self.num_epochs_binary * 1000
 
     def create_datasets(self, data: pd.DataFrame):

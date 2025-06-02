@@ -1,12 +1,15 @@
 import logging
 import random
+import time
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from pipelines.cascade_classification import CascadePropagandaPipeline
 from pipelines.enhanced_cascade import EnhancedCascadePropagandaPipeline
 from pipelines.enhanced_smote import EnhancedSmotePropagandaPipeline
 from pipelines.improved_cascade import ImprovedCascadePropagandaPipeline
 from utils.translate import check_lang_corpus, translate_corpus
-
+from utils.draw_report import draw_report
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -48,6 +51,24 @@ def result_output(predict, pipeline, text, pipeline_name, idx):
     logger.info(f"Правильно определены чистые тексты (True Negatives): {true_negatives}")
     logger.info(f"Ложные срабатывания (False Positives): {false_positives}")
     logger.info(f"Пропущенная пропаганда (False Negatives): {false_negatives}")
+
+    # Обчислення метрик
+    accuracy = accuracy_score(predict, binary_scores)
+    precision = precision_score(predict, binary_scores)
+    recall = recall_score(predict, binary_scores)
+    f1 = f1_score(predict, binary_scores)
+
+    # Виведення результатів
+    logger.info(f"Точність (Accuracy): {accuracy:.2%}")
+    logger.info(f"Влучність (Precision): {precision:.2%}")
+    logger.info(f"Повнота (Recall): {recall:.2%}")
+    logger.info(f"F1-міра: {f1:.2%}")
+
+    # Виклик draw_report для побудови та збереження матриці розсіювання
+    title = f"Матриця розсіювання для {pipeline_name.upper()} PIPELINE v{idx}"
+    file_name = f"{pipeline_name}_pipeline_v{idx}_confusion_matrix"
+    extension = "jpg"
+    draw_report(title, predict, binary_scores, file_name, extension)
 
 
 def main():

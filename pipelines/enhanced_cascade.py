@@ -665,24 +665,169 @@ class EnhancedCascadePropagandaPipeline(CascadePropagandaPipeline):
 
 
 if __name__ == "__main__":
-    # Инициализация пайплайна
+    # # Инициализация пайплайна
+    # pipeline = EnhancedCascadePropagandaPipeline(
+    #     model_path="../models",
+    #     model_name="ecpm_ua_v1",
+    #     batch_size=32,
+    #     num_epochs_binary=10,
+    #     num_epochs_technique=10,
+    #     learning_rate=2e-5,
+    #     warmup_steps=1000,
+    #     max_length=512,
+    #     class_weights=True,
+    #     binary_k_range=[2, 3, 4, 5, 6, 7],
+    #     technique_k_range=[3, 4, 5],
+    #     dataset_distribution=0.9,
+    #     use_ukrainian=True
+    # )
+    #
+    # # Обучение и оценка
+    # try:
+    #     logger.info("Starting training and evaluation...")
+    #     metrics = pipeline.train_and_evaluate(
+    #         data_path="../datasets/tasks-2-3/combined_dataset_ua.csv"
+    #     )
+    #
+    #     logger.info("\nFinal Evaluation Results:")
+    #     logger.info("\nBinary Classification Metrics:")
+    #     for metric, value in metrics['binary_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    #     logger.info("\nTechnique Classification Metrics:")
+    #     for metric, value in metrics['technique_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    # except Exception as e:
+    #     logger.error(f"Pipeline execution failed: {str(e)}")
+
+    # del pipeline, metrics
+    #
+    # pipeline = EnhancedCascadePropagandaPipeline(
+    #     model_path="../models",
+    #     model_name="ecpm_ua_v2",
+    #     batch_size=32,
+    #     num_epochs_binary=12,
+    #     num_epochs_technique=12,
+    #     learning_rate=2e-7,
+    #     warmup_steps=4000,
+    #     max_length=2048,
+    #     class_weights=True,
+    #     binary_k_range=[3, 5, 7, 9],
+    #     technique_k_range=[2, 3, 4, 5, 6, 7],
+    #     dataset_distribution=0.95,
+    #     use_ukrainian=True
+    # )
+    #
+    # # Обучение и оценка
+    # try:
+    #     logger.info("Starting training and evaluation...")
+    #     metrics = pipeline.train_and_evaluate(
+    #         data_path="../datasets/tasks-2-3/combined_dataset_ua.csv"
+    #     )
+    #
+    #     logger.info("\nFinal Evaluation Results:")
+    #     logger.info("\nBinary Classification Metrics:")
+    #     for metric, value in metrics['binary_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    #     logger.info("\nTechnique Classification Metrics:")
+    #     for metric, value in metrics['technique_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    # except Exception as e:
+    #     logger.error(f"Pipeline execution failed: {str(e)}")
+    #
+    # from evaluate_pipeline import main as main_evaluate_pipeline
+    # main_evaluate_pipeline()
+    #
+
+    # pipeline = EnhancedCascadePropagandaPipeline(
+    #     model_path="../models",
+    #     model_name="ecpm_ua_v3",
+    #     batch_size=64,
+    #     num_epochs_binary=15,
+    #     num_epochs_technique=10,
+    #     learning_rate=2e-7,
+    #     warmup_steps=5000,
+    #     max_length=1024,
+    #     class_weights=True,
+    #     binary_k_range=[3, 5, 7, 9, 11],
+    #     technique_k_range=[2, 3, 4, 5],
+    #     dataset_distribution=0.99,
+    #     use_ukrainian=True
+    # )
+    #
+    # # Обучение и оценка
+    # try:
+    #     logger.info("Starting training and evaluation...")
+    #     metrics = pipeline.train_and_evaluate(
+    #         data_path="../datasets/tasks-2-3/combined_dataset_ua.csv"
+    #     )
+    #
+    #     logger.info("\nFinal Evaluation Results:")
+    #     logger.info("\nBinary Classification Metrics:")
+    #     for metric, value in metrics['binary_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    #     logger.info("\nTechnique Classification Metrics:")
+    #     for metric, value in metrics['technique_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    # except Exception as e:
+    #     logger.error(f"Pipeline execution failed: {str(e)}")
+
+    # pipeline = EnhancedCascadePropagandaPipeline(
+    #     model_path="../models",
+    #     model_name="ecpm_ua_v3",
+    #     batch_size=32,
+    #     num_epochs_binary=40,
+    #     num_epochs_technique=10,
+    #     learning_rate=2e-5,
+    #     warmup_steps=1000,
+    #     max_length=512,
+    #     class_weights=True,
+    #     binary_k_range=[2, 3, 4, 5, 6],
+    #     technique_k_range=[3, 5, 7],
+    #     dataset_distribution=0.95,
+    #     use_ukrainian=True
+    # )
+    #
+    # # Обучение и оценка
+    # try:
+    #     logger.info("Starting training and evaluation...")
+    #     metrics = pipeline.train_and_evaluate(
+    #         data_path="../datasets/tasks-2-3/combined_dataset_ua.csv"
+    #     )
+    #
+    #     logger.info("\nFinal Evaluation Results:")
+    #     logger.info("\nBinary Classification Metrics:")
+    #     for metric, value in metrics['binary_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    #     logger.info("\nTechnique Classification Metrics:")
+    #     for metric, value in metrics['technique_metrics'].items():
+    #         logger.info(f"{metric}: {value:.4f}")
+    #
+    # except Exception as e:
+    #     logger.error(f"Pipeline execution failed: {str(e)}")
+
     pipeline = EnhancedCascadePropagandaPipeline(
         model_path="../models",
-        model_name="ecpm_ua_v1",
+        model_name="ecpm_ua_v4",
         batch_size=32,
-        num_epochs_binary=10,
+        num_epochs_binary=100,
         num_epochs_technique=10,
         learning_rate=2e-5,
         warmup_steps=1000,
         max_length=512,
         class_weights=True,
-        binary_k_range=[2, 3, 4, 5, 6, 7],
-        technique_k_range=[3, 4, 5],
-        dataset_distribution=0.9,
-        use_ukrainian=True
+        binary_k_range=[1, 3, 5, 7, 9],
+        technique_k_range=[3, 5, 7],
+        dataset_distribution=0.95,
+        use_ukrainian=True,
     )
 
-    # Обучение и оценка
     try:
         logger.info("Starting training and evaluation...")
         metrics = pipeline.train_and_evaluate(
@@ -701,78 +846,5 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Pipeline execution failed: {str(e)}")
 
-    # del pipeline, metrics
-    #
-    # pipeline = EnhancedCascadePropagandaPipeline(
-    #     model_path="../models",
-    #     model_name="ecpm_ua_v2",
-    #     batch_size=32,
-    #     num_epochs_binary=15,
-    #     num_epochs_technique=10,
-    #     learning_rate=2e-5,
-    #     warmup_steps=1000,
-    #     max_length=512,
-    #     class_weights=True,
-    #     binary_k_range=[3, 5, 7],
-    #     technique_k_range=[2, 3, 4, 5, 6],
-    #     dataset_distribution=0.8,
-    #     use_ukrainian=True
-    # )
-    #
-    # # Обучение и оценка
-    # try:
-    #     logger.info("Starting training and evaluation...")
-    #     metrics = pipeline.train_and_evaluate(
-    #         data_path="../datasets/tasks-2-3/combined_dataset_ua.csv"
-    #     )
-    #
-    #     logger.info("\nFinal Evaluation Results:")
-    #     logger.info("\nBinary Classification Metrics:")
-    #     for metric, value in metrics['binary_metrics'].items():
-    #         logger.info(f"{metric}: {value:.4f}")
-    #
-    #     logger.info("\nTechnique Classification Metrics:")
-    #     for metric, value in metrics['technique_metrics'].items():
-    #         logger.info(f"{metric}: {value:.4f}")
-    #
-    # except Exception as e:
-    #     logger.error(f"Pipeline execution failed: {str(e)}")
-    #
-    # del pipeline, metrics
-    #
-    # pipeline = EnhancedCascadePropagandaPipeline(
-    #     model_path="../models",
-    #     model_name="ecpm_ua_v3",
-    #     batch_size=32,
-    #     num_epochs_binary=15,
-    #     num_epochs_technique=10,
-    #     learning_rate=2e-5,
-    #     warmup_steps=1000,
-    #     max_length=512,
-    #     class_weights=True,
-    #     binary_k_range=[2, 3, 4, 5, 6, 7],
-    #     technique_k_range=[3, 4, 5, 6],
-    #     dataset_distribution=0.8,
-    #     use_ukrainian=True
-    # )
-    #
-    # # Обучение и оценка
-    # try:
-    #     logger.info("Starting training and evaluation...")
-    #     metrics = pipeline.train_and_evaluate(
-    #         data_path="../datasets/tasks-2-3/combined_dataset_ua.csv"
-    #     )
-    #
-    #     logger.info("\nFinal Evaluation Results:")
-    #     logger.info("\nBinary Classification Metrics:")
-    #     for metric, value in metrics['binary_metrics'].items():
-    #         logger.info(f"{metric}: {value:.4f}")
-    #
-    #     logger.info("\nTechnique Classification Metrics:")
-    #     for metric, value in metrics['technique_metrics'].items():
-    #         logger.info(f"{metric}: {value:.4f}")
-    #
-    # except Exception as e:
-    #     logger.error(f"Pipeline execution failed: {str(e)}")
-    #
-    # del pipeline, metrics
+    from evaluate_pipeline import main as main_evaluate_pipeline
+    main_evaluate_pipeline()
